@@ -10,10 +10,18 @@ export interface MapperInput {
   history_len: number;
 }
 
+export interface MapperResult {
+  /** The model's text, or "error: ..." on failure. */
+  raw: string;
+  /** null when nothing usable came back. */
+  ops: SceneOperation[] | null;
+  /** The model answered with ops, but the output guard rejected them (ops is then []). */
+  guardRejected?: boolean;
+}
+
 export interface SceneMapper {
   name: string;
-  /** `raw` is the model's text (or "error: ..." on failure); `ops` is null when nothing usable came back. */
-  predict(input: MapperInput): Promise<{ raw: string; ops: SceneOperation[] | null }>;
+  predict(input: MapperInput): Promise<MapperResult>;
 }
 
 export interface EvalCase {

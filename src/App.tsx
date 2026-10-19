@@ -3,6 +3,7 @@ import { Lobby, randomName } from "./game/Lobby";
 import { Play } from "./game/Play";
 import { Reveal } from "./game/Reveal";
 import { useRoom } from "./game/useRoom";
+import { DebugPanel } from "./game/DebugPanel";
 
 const ALPH = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -30,7 +31,7 @@ export function App() {
   const [room, setRoom] = useState<string | null>(
     initialRoom.length === 4 ? initialRoom : null,
   );
-  const { state, youId, secret, guesses, toasts, connected, send } = useRoom(room, name);
+  const { state, youId, secret, guesses, debug, toasts, connected, send } = useRoom(room, name);
 
   const enterRoom = (code: string) => {
     const next = code.toUpperCase();
@@ -48,6 +49,9 @@ export function App() {
   const players = state?.players ?? [];
   const connectedCount = players.filter((p) => p.connected).length;
   const isHost = Boolean(youId && state && youId === state.hostId);
+  // The debug log contains utterances, so it is hidden whenever the host is a guesser in the current round.
+  const hostGuessing = Boolean(state && (state.phase === "countdown" || state.phase === "playing") && youId !== state.yapperId);
+  const showDebug = isHost && !hostGuessing && Boolean(room);
   const phase = !room ? "entry" : (state?.phase ?? "lobby");
 
   const screen = useMemo(() => {
@@ -102,6 +106,8 @@ export function App() {
           />
         )}
       </main>
+
+      {showDebug && <DebugPanel entries={debug} />}
 
       <div className="toasts" aria-live="polite">
         {toasts.map((t) => (

@@ -1,10 +1,12 @@
 import type * as Party from "partykit/server";
-import clues from "../src/clues.json";
-import { planDrawing } from "./drawingPlanner";
-import { fuzzyMatch, hitsBanned } from "./match";
+import { SceneEngine, type Snapshot } from "../src/scene/engine.ts";
+import { DEMO_SCENES } from "./demoScenes";
+import { fuzzyMatch, hitsBanned, sceneGuessMatches } from "./match";
+import { defaultChain, mapUtterance, readMapperEnv, warmUpQwen } from "./sceneMapper";
 import type {
   Clue,
   ClientMessage,
+  DebugEntry,
   DrawingOp,
   Player,
   PublicState,
@@ -20,9 +22,13 @@ const PLAYING_S = 75;
 const REVEAL_S = 8;
 const PAINT_LEAD_MS = 400;
 const MAX_PLAYERS = 8;
-const MAX_SCENE = 700;
+const MAX_DEBUG = 200;
+const WARMUP_MIN_GAP_MS = 60_000;
+/** Inside Modal's 5-minute idle window, so the GPU stays up while a room is open (costs GPU time while players idle). */
+const KEEP_WARM_MS = 4 * 60_000;
 
-const CLUES = clues as Clue[];
+// Demo build: scenes drawable by the scene engine (cat, tree, house, sun, cloud). The classic clue list is src/clues.json.
+const CLUES: Clue[] = DEMO_SCENES;
 
 const GUESSED_ROASTS = [
   (n: string) => `${n} ruined the mystery. Thanks.`,
@@ -53,7 +59,6 @@ export default class YapServer implements Party.Server {
   timeLeft = 0;
   yapperId: string | null = null;
   seed = 0;
-  scene = "";
   prompt = "";
   paintingGeneration = 0;
   paintStartedAt = 0;
@@ -62,10 +67,18 @@ export default class YapServer implements Party.Server {
   clue: Clue | null = null;
   roundClosed = false;
   reveal: PublicState["reveal"];
+  /** The round's canvas. The app owns ids and focus; one utterance is one undoable action. */
+  engine = new SceneEngine();
+  /** The yapper's utterances this round. Kept on the server until the reveal. */
+  roundUtterances: string[] = [];
+  debugLog: DebugEntry[] = [];
 
   private tickTimer: ReturnType<typeof setInterval> | null = null;
   private paintTimer: ReturnType<typeof setTimeout> | null = null;
-  private paintRequestId = 0;
+  /** Utterances run one at a time, so each one sees the scene the previous one produced. */
+  private utteranceQueue: Promise<void> = Promise.resolve();
+  private lastWarmAt = 0;
+  private keepWarmTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(readonly room: Party.Room) {}
 
@@ -79,6 +92,7 @@ export default class YapServer implements Party.Server {
       );
       this.send(connection, { type: "state", state: this.publicState() });
       this.sendSecretIfYapper(connection);
+      this.sendDebugToHost();
       this.broadcastState();
     }
   }
@@ -150,6 +164,11 @@ export default class YapServer implements Party.Server {
     this.send(sender, { type: "you", id: sender.id, isHost: this.hostId === sender.id });
     this.broadcast({ type: "toast", text: `${name} crawled in.` });
     this.broadcastState();
+    // The lobby just opened: wake the GPU now so the first real utterance doesn't wait for a cold start.
+    if (this.players.size === 1) {
+      void this.warmUp("lobby opened");
+      if (!this.keepWarmTimer) this.keepWarmTimer = setInterval(() => void this.warmUp("keep warm"), KEEP_WARM_MS);
+    }
   }
 
   private handleStart(sender: Party.Connection) {
@@ -171,6 +190,7 @@ export default class YapServer implements Party.Server {
     this.usedClueIds.clear();
     this.round = 0;
     this.yapperId = null;
+    void this.warmUp("game started");
     this.beginRound();
   }
 
@@ -188,14 +208,101 @@ export default class YapServer implements Party.Server {
       return;
     }
 
-    const previousScene = this.scene;
-    this.scene = this.scene ? `${this.scene}, ${text}` : text;
-    if (this.scene.length > MAX_SCENE) {
-      this.scene = this.scene.slice(this.scene.length - MAX_SCENE);
-    }
+    const round = this.round;
+    const engine = this.engine;
+    this.roundUtterances.push(text);
+    this.utteranceQueue = this.utteranceQueue
+      .then(() => this.applyUtterance(text, round, engine))
+      .catch(() => {});
+  }
 
-    this.clearPaintTimer();
-    void this.broadcastPaint(text, previousScene);
+  /** Maps one utterance to ops (Qwen -> Gemini -> keyword) and applies them. On failure the canvas is left as it was. */
+  private async applyUtterance(text: string, round: number, engine: SceneEngine) {
+    if (round !== this.round || engine !== this.engine) return;
+    const before = engine.snapshot();
+    // Only the utterance and the scene graph go to the models. The secret scene never leaves the server.
+    const input = { utterance: text, scene: { objects: before.objects }, focus_id: before.focus_id, history_len: engine.state.history.length };
+    const result = await mapUtterance(input, (ops) => engine.execute(ops), defaultChain(readMapperEnv(this.room.env)));
+    if (round !== this.round || engine !== this.engine) return;
+
+    const winner = result.attempts[result.attempts.length - 1];
+    this.logDebug({
+      round,
+      utterance: text,
+      mapper: result.mapper,
+      ms: result.ms,
+      attempts: result.attempts.map(({ mapper, outcome, ms }) => ({ mapper, outcome, ms })),
+      raw: result.mapper ? winner.raw : result.attempts.map((a) => `${a.mapper}: ${a.raw || a.outcome}`).join(" | "),
+      ops: result.ops,
+    });
+
+    const yapper = this.connectionFor(this.yapperId);
+    if (!result.mapper) {
+      if (yapper) this.send(yapper, { type: "toast", text: "The intern choked. Canvas unchanged, say it again." });
+      return;
+    }
+    if (result.ops.length === 0) {
+      if (yapper) this.send(yapper, { type: "toast", text: "The intern heard you but drew nothing." });
+      return;
+    }
+    this.repaint(before);
+  }
+
+  /** Publishes the engine's scene graph as stamps; objects changed since `before` animate, the rest appear instantly. */
+  private repaint(before: Snapshot) {
+    const previous = new Map(before.objects.map((o) => [o.id, JSON.stringify(o)]));
+    const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+    this.drawingOps = this.engine.state.objects.map((o) => ({
+      stamp: o.type,
+      color: o.color,
+      size: "medium",
+      count: 1,
+      x: clamp(o.x * 100, 5, 95),
+      y: clamp(o.y * 100, 8, 92),
+      scale: o.scale,
+      key: o.id,
+      fresh: previous.get(o.id) !== JSON.stringify(o),
+    }));
+    this.paintingGeneration += 1;
+    this.paintStartedAt = Date.now() + PAINT_LEAD_MS;
+    // A neutral placeholder, never the transcript: guessers must not receive what the yapper said.
+    this.prompt = this.drawingOps.length ? "scene" : "";
+    this.broadcastState();
+  }
+
+  private async warmUp(reason: string) {
+    const env = readMapperEnv(this.room.env);
+    if (!env.QWEN_ENDPOINT_URL || Date.now() - this.lastWarmAt < WARMUP_MIN_GAP_MS) return;
+    this.lastWarmAt = Date.now();
+    const ms = await warmUpQwen(env);
+    this.logDebug({
+      round: this.round,
+      utterance: `(warm-up: ${reason})`,
+      mapper: ms === null ? null : "qwen",
+      ms: ms ?? 0,
+      attempts: [],
+      raw: ms === null ? "warm-up failed; the game will fall back to Gemini/keyword until Qwen answers" : `Qwen ready in ${ms} ms`,
+      ops: [],
+      note: "warm-up",
+    });
+  }
+
+  private logDebug(entry: DebugEntry) {
+    this.debugLog.push(entry);
+    if (this.debugLog.length > MAX_DEBUG) this.debugLog.splice(0, this.debugLog.length - MAX_DEBUG);
+    this.sendDebugToHost();
+  }
+
+  /** The debug log shows utterances, so the host only sees it while not guessing: as the yapper, or between rounds. */
+  private sendDebugToHost() {
+    const host = this.connectionFor(this.hostId);
+    if (!host) return;
+    const guessing = (this.phase === "countdown" || this.phase === "playing") && this.hostId !== this.yapperId;
+    if (!guessing) this.send(host, { type: "debug", entries: this.debugLog });
+  }
+
+  private connectionFor(id: string | null): Party.Connection | undefined {
+    return id ? [...this.room.getConnections()].find((c) => c.id === id) : undefined;
   }
 
   private handleGuess(sender: Party.Connection, raw: string) {
@@ -209,7 +316,9 @@ export default class YapServer implements Party.Server {
     const text = raw.replace(/\s+/g, " ").trim();
     if (!text) return;
 
-    const correct = this.clue ? fuzzyMatch(text, this.clue.text) : false;
+    const correct = !this.clue ? false
+      : this.clue.required ? sceneGuessMatches(text, this.clue.required)
+      : fuzzyMatch(text, this.clue.text);
     this.broadcast({ type: "guess", name: player.name, text, correct });
 
     if (correct) {
@@ -238,13 +347,14 @@ export default class YapServer implements Party.Server {
 
     this.yapperId = this.nextYapper();
     this.clue = this.pickClue();
-    this.scene = "";
     this.prompt = "";
     this.seed = Math.floor(Math.random() * 1_000_000_000);
     this.paintingGeneration = 0;
     this.paintStartedAt = 0;
     this.drawingOps = [];
-    this.paintRequestId += 1;
+    this.engine = new SceneEngine();
+    this.utteranceQueue = Promise.resolve();
+    this.roundUtterances = [];
     this.roundClosed = false;
     this.reveal = undefined;
     this.phase = "countdown";
@@ -281,7 +391,6 @@ export default class YapServer implements Party.Server {
     if (this.roundClosed) return;
     this.roundClosed = true;
     this.clearPaintTimer();
-    if (this.scene && this.prompt === "") void this.broadcastPaint(this.scene, "");
 
     const winner = winnerId ? this.players.get(winnerId) : null;
     if (reason === "guessed" && winner) {
@@ -300,10 +409,12 @@ export default class YapServer implements Party.Server {
       reason,
       winnerName,
       roast: roastFor(reason, winnerName),
+      said: this.roundUtterances.join(", "),
     };
     this.phase = "reveal";
     this.timeLeft = REVEAL_S;
     this.broadcastState();
+    this.sendDebugToHost();
   }
 
   private tick() {
@@ -331,32 +442,6 @@ export default class YapServer implements Party.Server {
           return;
         }
       }
-    }
-    this.broadcastState();
-  }
-
-  private async broadcastPaint(utterance: string, currentScene: string) {
-    const requestId = ++this.paintRequestId;
-    const requestedRound = this.round;
-    const requestedScene = this.scene;
-    const rawKey = this.room.env.GEMINI_API_KEY;
-    const rawModel = this.room.env.GEMINI_MODEL;
-    const apiKey = typeof rawKey === "string" ? rawKey : undefined;
-    const model = typeof rawModel === "string" ? rawModel : undefined;
-    const operations = await planDrawing(utterance, currentScene, apiKey, model);
-    if (requestId !== this.paintRequestId || requestedRound !== this.round) return;
-
-    this.paintingGeneration += 1;
-    this.prompt = requestedScene;
-    this.drawingOps = operations;
-    this.paintStartedAt = Date.now() + PAINT_LEAD_MS;
-    if (operations.length === 0) {
-      this.broadcast({
-        type: "toast",
-        text: apiKey
-          ? "Intern blanked. Using the cheap crayons."
-          : "No Gemini key. Cheap crayons only.",
-      });
     }
     this.broadcastState();
   }
@@ -413,6 +498,10 @@ export default class YapServer implements Party.Server {
 
   private resetEmptyRoom() {
     this.stopTick();
+    if (this.keepWarmTimer) {
+      clearInterval(this.keepWarmTimer);
+      this.keepWarmTimer = null;
+    }
     this.clearPaintTimer();
     this.players.clear();
     this.joinOrder = [];
@@ -422,12 +511,14 @@ export default class YapServer implements Party.Server {
     this.timeLeft = 0;
     this.yapperId = null;
     this.seed = 0;
-    this.scene = "";
     this.prompt = "";
     this.paintingGeneration = 0;
     this.paintStartedAt = 0;
     this.drawingOps = [];
-    this.paintRequestId += 1;
+    this.engine = new SceneEngine();
+    this.utteranceQueue = Promise.resolve();
+    this.debugLog = [];
+    this.lastWarmAt = 0;
     this.usedClueIds.clear();
     this.clue = null;
     this.reveal = undefined;
@@ -453,6 +544,7 @@ export default class YapServer implements Party.Server {
       paintingGeneration: this.paintingGeneration,
       paintStartedAt: this.paintStartedAt,
       drawingOps: this.drawingOps,
+      sceneMode: true,
       reveal: this.phase === "reveal" || this.phase === "gameover" ? this.reveal : undefined,
     };
   }

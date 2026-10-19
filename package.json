@@ -14,7 +14,8 @@
     "gen:data": "tsx train/data/generate.ts",
     "check:leakage": "tsx train/data/check-leakage.ts",
     "test:data": "tsx --test train/data/*.test.ts",
-    "typecheck:data": "tsc -p train/data"
+    "typecheck:data": "tsc -p train/data",
+    "e2e:local": "tsx party/e2e-local.mts"
   },
   "dependencies": {
     "partysocket": "^1.1.10",

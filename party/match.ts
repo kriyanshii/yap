@@ -123,3 +123,8 @@ export function sillyFilename(clue: string): string {
   const base = pick.join(" ").trim() || "mystery";
   return `${base}.bmp`;
 }
+
+/** Demo scenes: a guess is right when it names every required word (object nouns and colors), in any order. */
+export function sceneGuessMatches(guess: string, required: string[]): boolean {
+  return required.length > 0 && required.every((word) => hitsBanned(guess, [word]));
+}

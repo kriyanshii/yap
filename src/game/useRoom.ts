@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import PartySocket from "partysocket";
-import type { PublicState, ServerMessage } from "../../party/types";
+import type { DebugEntry, PublicState, ServerMessage } from "../../party/types";
 
 export type Secret = { clue: string; banned: string[] };
 export type PublicGuess = { name: string; text: string; correct: boolean };
@@ -17,6 +17,7 @@ export function useRoom(code: string | null, name: string) {
   const [state, setState] = useState<PublicState | null>(null);
   const [youId, setYouId] = useState<string | null>(null);
   const [secret, setSecret] = useState<Secret | null>(null);
+  const [debug, setDebug] = useState<DebugEntry[]>([]);
   const [guesses, setGuesses] = useState<PublicGuess[]>([]);
   const [toasts, setToasts] = useState<string[]>([]);
   const [connected, setConnected] = useState(false);
@@ -85,6 +86,10 @@ export function useRoom(code: string | null, name: string) {
         pushToast(msg.text);
         return;
       }
+      if (msg.type === "debug") {
+        setDebug(msg.entries);
+        return;
+      }
       if (msg.type === "state") {
         const prev = stateRef.current;
         if (!prev || prev.round !== msg.state.round) {
@@ -117,6 +122,7 @@ export function useRoom(code: string | null, name: string) {
     youId,
     secret,
     guesses,
+    debug,
     toasts,
     connected,
     send,

@@ -37,6 +37,8 @@ type Props = {
   generation: number;
   paintStartedAt: number;
   drawingOps: DrawingOp[];
+  /** drawingOps is a full scene graph: repaint from blank each update instead of layering over the old canvas. */
+  sceneMode?: boolean;
   painting: boolean;
   stickies?: StickyGuess[];
 };
@@ -48,6 +50,7 @@ export function PaintWindow({
   generation,
   paintStartedAt,
   drawingOps,
+  sceneMode = false,
   painting,
   stickies = [],
 }: Props) {
@@ -92,8 +95,14 @@ export function PaintWindow({
       const elapsed = reducedMotion
         ? plan.duration
         : Math.max(0, Date.now() - paintStartedAt);
-      const active = renderPlan(scratch, plan, elapsed, true);
-      composeFrame(canvasRef.current, previous, scratch);
+      let active: Point | null;
+      if (sceneMode) {
+        // Moved or deleted objects must not linger, so draw the whole scene from blank (unchanged stamps are instant).
+        active = renderPlan(canvasRef.current, plan, elapsed);
+      } else {
+        active = renderPlan(scratch, plan, elapsed, true);
+        composeFrame(canvasRef.current, previous, scratch);
+      }
       movePen(penRef.current, active);
       const activeDrawing = elapsed < plan.duration;
       setDrawing(activeDrawing);
@@ -111,7 +120,7 @@ export function PaintWindow({
       window.cancelAnimationFrame(frame);
       movePen(penRef.current, null);
     };
-  }, [prompt, seed, generation, paintStartedAt, drawingOps]);
+  }, [prompt, seed, generation, paintStartedAt, drawingOps, sceneMode]);
 
   return (
     <div className="paint-wrap">
@@ -241,12 +250,19 @@ function renderPlan(
 
   let remaining = elapsed;
   let active: Point | null = plan.strokes[0]?.points[0] ?? null;
+  let animating = true;
   for (const item of plan.strokes) {
+    // Zero-duration strokes (unchanged scene objects) are always drawn, even while an earlier stroke is still animating.
+    if (item.duration === 0) {
+      drawStroke(ctx, item, 1);
+      continue;
+    }
+    if (!animating) continue;
     const progress = Math.max(0, Math.min(1, remaining / item.duration));
-    if (progress <= 0) break;
+    if (progress <= 0) { animating = false; continue; }
     active = drawStroke(ctx, item, progress);
     remaining -= item.duration;
-    if (progress < 1) break;
+    if (progress < 1) animating = false;
   }
   return elapsed >= plan.duration ? null : active;
 }

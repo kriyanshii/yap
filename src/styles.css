@@ -968,3 +968,50 @@ input {
     grid-template-columns: repeat(14, minmax(0, 1fr));
   }
 }
+
+/* Host-only mapper debug log (demo builds). */
+.debug-panel {
+  position: fixed;
+  right: 12px;
+  top: 12px;
+  width: 320px;
+  max-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  z-index: 30;
+  font-size: 12px;
+}
+.debug-panel.collapsed { width: 220px; }
+.debug-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  background: #fff;
+}
+.debug-list li {
+  border-bottom: 1px dotted #999;
+  padding: 4px 2px 6px;
+}
+.debug-head { display: flex; gap: 8px; align-items: baseline; }
+.debug-mapper { font-weight: 700; }
+.debug-qwen .debug-mapper { color: #0a7d32; }
+.debug-gemini .debug-mapper { color: #1d4fbf; }
+.debug-keyword .debug-mapper { color: #8a5a00; }
+.debug-failed .debug-mapper { color: #b00020; }
+.debug-ms { margin-left: auto; font-variant-numeric: tabular-nums; }
+.debug-round { color: #666; }
+.debug-utt { margin: 2px 0; font-style: italic; }
+.debug-chain { color: #555; }
+.debug-ops {
+  display: block;
+  white-space: pre-wrap;
+  word-break: break-all;
+  background: #f3f3f3;
+  padding: 2px 4px;
+  font-size: 11px;
+}
+.debug-empty { color: #777; }
+@media (max-width: 900px) {
+  .debug-panel { position: static; width: auto; max-height: 40vh; margin: 8px; }
+}

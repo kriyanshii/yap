@@ -156,7 +156,8 @@ def train(expected_sha: dict, epochs: int = 3, lr: float = 2e-4, lora_r: int = 1
     return run_info
 
 
-@app.cls(image=base_image, gpu=GPU, volumes={str(VOL): volume}, scaledown_window=300)
+# One container at most: requests that time out on the client keep running here, and a backlog must not start a second GPU.
+@app.cls(image=base_image, gpu=GPU, volumes={str(VOL): volume}, scaledown_window=300, max_containers=1)
 class QwenMapper:
     @modal.enter()
     def load(self):

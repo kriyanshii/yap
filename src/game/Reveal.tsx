@@ -39,8 +39,8 @@ export function Reveal({ state, youId, guesses, isHost, onAgain }: Props) {
           <p className="reason">{reasonLabel(reveal?.reason)}</p>
           <h2 className="clue-reveal">{reveal?.clue ?? "???"}</h2>
           <p className="roast">{reveal?.roast}</p>
-          {state.prompt ? (
-            <p className="said-line">They told the intern: {state.prompt}</p>
+          {reveal?.said ? (
+            <p className="said-line">They told the intern: {reveal.said}</p>
           ) : null}
         </header>
       )}
@@ -52,6 +52,7 @@ export function Reveal({ state, youId, guesses, isHost, onAgain }: Props) {
         generation={state.paintingGeneration}
         paintStartedAt={state.paintStartedAt}
         drawingOps={state.drawingOps ?? []}
+        sceneMode={state.sceneMode}
         painting={false}
         stickies={guesses
           .filter((g) => !g.correct)

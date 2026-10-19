@@ -61,7 +61,7 @@ export function Play({ state, youId, secret, guesses, send }: Props) {
 
   const yapperName =
     state.players.find((p) => p.id === state.yapperId)?.name ?? "Someone";
-  const internHeard = state.prompt || heardByIntern;
+  const internHeard = heardByIntern;
   const takeText = holding ? heard : typed;
 
   return (
@@ -91,6 +91,7 @@ export function Play({ state, youId, secret, guesses, send }: Props) {
         generation={state.paintingGeneration}
         paintStartedAt={state.paintStartedAt}
         drawingOps={state.drawingOps ?? []}
+        sceneMode={state.sceneMode}
         painting={false}
         stickies={stickies}
       />

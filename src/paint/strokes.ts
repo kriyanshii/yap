@@ -1,4 +1,5 @@
 import { DRAWING_STAMP_ALIASES, type DrawingOp, type DrawingSize } from "../../party/types";
+import { DEFAULTS as SCENE_DEFAULTS } from "../scene/engine";
 
 export type Point = { x: number; y: number };
 
@@ -53,13 +54,14 @@ const STOP = new Set([
 const aliases: { keys: string[]; id: string; builder: Builder; defaultColor: string; layer: number }[] = [
   { keys: ["mountains", "mountain", "hills", "hill"], id: "mountain", builder: mountain, defaultColor: "#65739b", layer: 0 },
   { keys: ["river", "stream", "road"], id: "river", builder: river, defaultColor: "#58a6c7", layer: 0 },
-  { keys: ["clouds", "cloud"], id: "cloud", builder: cloud, defaultColor: "#f7f4e8", layer: 1 },
-  { keys: ["sun"], id: "sun", builder: sun, defaultColor: COLORS.yellow, layer: 1 },
+  // The five scene-engine types use the engine's default colors (src/scene/engine.ts DEFAULTS), so both always agree.
+  { keys: ["clouds", "cloud"], id: "cloud", builder: cloud, defaultColor: COLORS[SCENE_DEFAULTS.cloud], layer: 1 },
+  { keys: ["sun"], id: "sun", builder: sun, defaultColor: COLORS[SCENE_DEFAULTS.sun], layer: 1 },
   { keys: ["moon"], id: "moon", builder: moon, defaultColor: "#e7df9b", layer: 1 },
-  { keys: ["trees", "tree"], id: "tree", builder: tree, defaultColor: COLORS.green, layer: 2 },
-  { keys: ["houses", "house", "home"], id: "house", builder: house, defaultColor: COLORS.red, layer: 2 },
+  { keys: ["trees", "tree"], id: "tree", builder: tree, defaultColor: COLORS[SCENE_DEFAULTS.tree], layer: 2 },
+  { keys: ["houses", "house", "home"], id: "house", builder: house, defaultColor: COLORS[SCENE_DEFAULTS.house], layer: 2 },
   { keys: ["people", "person", "woman", "man", "girl", "boy"], id: "person", builder: person, defaultColor: COLORS.blue, layer: 3 },
-  { keys: ["cats", "cat", "kitten"], id: "cat", builder: cat, defaultColor: COLORS.orange, layer: 3 },
+  { keys: ["cats", "cat", "kitten"], id: "cat", builder: cat, defaultColor: COLORS[SCENE_DEFAULTS.cat], layer: 3 },
   { keys: ["dogs", "dog", "puppy"], id: "dog", builder: dog, defaultColor: COLORS.brown, layer: 3 },
   { keys: ["birds", "bird"], id: "bird", builder: bird, defaultColor: INK, layer: 3 },
   { keys: ["fish"], id: "fish", builder: fish, defaultColor: COLORS.orange, layer: 3 },
@@ -80,7 +82,14 @@ type Job = {
   x?: number;
   y?: number;
   size?: DrawingSize;
+  /** Scene-graph mode (see DrawingOp): exact scale, stable per-object randomness, and whether to animate. */
+  scale?: number;
+  key?: string;
+  fresh?: boolean;
 };
+
+/** Scene-graph mode: stamp sizes relative to each other, so a cat on a house reads as a cat on a house. */
+const SCENE_SIZE: Record<string, number> = { cat: 0.7 };
 
 export function createStrokePlan(
   scene: string,
@@ -108,6 +117,9 @@ export function createStrokePlan(
         x: operation.x,
         y: operation.y,
         size: operation.size,
+        scale: operation.scale,
+        key: operation.key,
+        fresh: operation.fresh,
       });
     }
   } else {
@@ -124,12 +136,16 @@ export function createStrokePlan(
   let foregroundIndex = 0;
 
   for (const job of jobs) {
+    // A scene object keeps its own randomness, so it looks the same from one update to the next.
+    const jobRng = job.key ? mulberry32((seed || 1) ^ hashString(job.key)) : rng;
     for (let i = 0; i < job.count; i++) {
-      const position = positionFor(job, i, job.count, foregroundIndex, foreground, rng);
-      const baseScale = job.id === "mountain" ? 1.25 : Math.max(0.72, 1.05 - job.count * 0.07);
-      const sizeScale = job.size === "small" ? 0.65 : job.size === "large" ? 1.3 : 1;
+      const position = positionFor(job, i, job.count, foregroundIndex, foreground, jobRng);
+      const baseScale = (job.id === "mountain" ? 1.25 : Math.max(0.72, 1.05 - job.count * 0.07)) * (job.key ? SCENE_SIZE[job.id] ?? 1 : 1);
+      const sizeScale = job.scale ?? (job.size === "small" ? 0.65 : job.size === "large" ? 1.3 : 1);
       const scale = baseScale * sizeScale;
-      strokes.push(...job.builder(position.x, position.y, scale, job.color, rng));
+      const built = job.builder(position.x, position.y, scale, job.color, jobRng);
+      // Unchanged scene objects appear instantly; only what the latest utterance changed is animated.
+      strokes.push(...(job.fresh === false ? built.map((stroke) => ({ ...stroke, duration: 0 })) : built));
       if (job.layer >= 2) foregroundIndex += 1;
     }
   }
@@ -412,7 +428,7 @@ function house(x: number, y: number, scale: number, color: string) {
       { x: x + 36 * scale, y: y - 18 * scale },
       { x: x + 36 * scale, y: y + 40 * scale },
       { x: x - 36 * scale, y: y + 40 * scale },
-    ], "#e7c98c"),
+    ], tint(color, 0.55)),
     polygon([
       { x: x - 44 * scale, y: y - 17 * scale },
       { x, y: y - 58 * scale },
@@ -447,6 +463,14 @@ function person(x: number, y: number, scale: number, color: string) {
     line([{ x: x - 7 * scale, y: y + 17 * scale }, { x: x - 12 * scale, y: y + 43 * scale }]),
     line([{ x: x + 7 * scale, y: y + 17 * scale }, { x: x + 12 * scale, y: y + 43 * scale }]),
   ];
+}
+
+/** Mixes a #rrggbb color toward white (0 = unchanged, 1 = white), so walls follow the house color but stay light. */
+function tint(hex: string, amount: number): string {
+  const n = Number.parseInt(hex.slice(1), 16);
+  if (!/^#[0-9a-f]{6}$/i.test(hex) || Number.isNaN(n)) return hex;
+  const mix = (c: number) => Math.round(c + (255 - c) * amount).toString(16).padStart(2, "0");
+  return `#${mix((n >> 16) & 255)}${mix((n >> 8) & 255)}${mix(n & 255)}`;
 }
 
 function cat(x: number, y: number, scale: number, color: string) {

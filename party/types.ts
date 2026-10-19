@@ -14,6 +14,8 @@ export type PublicReveal = {
   reason: RevealReason;
   winnerName: string | null;
   roast: string;
+  /** What the yapper said this round, published only after the round ends. */
+  said?: string;
 };
 
 export const DRAWING_STAMPS = [
@@ -106,6 +108,12 @@ export type DrawingOp = {
   count: number;
   x: number;
   y: number;
+  /** Scene-graph mode: exact scale from the scene engine (overrides size). */
+  scale?: number;
+  /** Scene-graph mode: the scene object id, so the stamp looks the same from one update to the next. */
+  key?: string;
+  /** Scene-graph mode: changed by the latest utterance (animated); unchanged stamps are drawn instantly. */
+  fresh?: boolean;
 };
 
 export type PublicState = {
@@ -122,6 +130,8 @@ export type PublicState = {
   paintingGeneration: number;
   paintStartedAt: number;
   drawingOps: DrawingOp[];
+  /** drawingOps is the scene engine's full scene graph (an empty list means an empty canvas). */
+  sceneMode: boolean;
   reveal?: PublicReveal;
 };
 
@@ -129,7 +139,21 @@ export type Clue = {
   id: string;
   text: string;
   banned: string[];
-  pack: "easy" | "weird" | "culture";
+  pack: "easy" | "weird" | "culture" | "demo";
+  /** Words a guess must contain (demo scenes); without it, guesses are fuzzy-matched against `text`. */
+  required?: string[];
+};
+
+/** Host-only debug log entry: which mapper answered one utterance, how fast, and with what. */
+export type DebugEntry = {
+  round: number;
+  utterance: string;
+  mapper: "qwen" | "gemini" | "keyword" | null;
+  ms: number;
+  attempts: { mapper: string; outcome: string; ms: number }[];
+  raw: string;
+  ops: unknown[];
+  note?: string;
 };
 
 export type ClientMessage =
@@ -143,4 +167,5 @@ export type ServerMessage =
   | { type: "secret"; clue: string; banned: string[] }
   | { type: "state"; state: PublicState }
   | { type: "guess"; name: string; text: string; correct: boolean }
-  | { type: "toast"; text: string };
+  | { type: "toast"; text: string }
+  | { type: "debug"; entries: DebugEntry[] };
