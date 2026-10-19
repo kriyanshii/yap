@@ -4,6 +4,14 @@ Yap is a party game where players speak, and their words become drawings on a sh
 
 **Headline.** A LoRA fine-tune of Qwen2.5-1.5B-Instruct (run 2) scores **95% exact match on the 79-case hard benchmark (v2)**, against 87% for prompted Gemini 3.5 Flash-Lite and 37% for a keyword parser. It gets **24/24 correct refusals** on v2. On the easier v1 benchmark it scores **94% raw / 96% with the output guard**, against 98% for Gemini. That gap is one case. See the caveats: run 2's training data was revised after looking at run 1's benchmark failures, so run 1 (**90% raw / 92% guarded on v2**) is the cleanest held-out number.
 
+## Published
+
+- Adapter: [kriyanshi/qwen2.5-1.5b-yap-scene-lora](https://huggingface.co/kriyanshi/qwen2.5-1.5b-yap-scene-lora) (Apache-2.0)
+- Synthetic training data: [kriyanshi/yap-scene-sft](https://huggingface.co/datasets/kriyanshi/yap-scene-sft) (CC-BY-4.0)
+- Eval set, v1 and v2-hard, evaluation only: [kriyanshi/yap-scene-eval](https://huggingface.co/datasets/kriyanshi/yap-scene-eval) (CC-BY-4.0, with a canary GUID)
+
+Not yet integrated into the game. The live game composes whole pictures from about 20 stamps for taboo-style clues, while this model makes step-by-step edits on 5 object types. Integration is deferred until a data run teaches the game's own vocabulary.
+
 ## The task
 
 Input: `{utterance, scene, focus_id, history_len}`. The utterance is lowercase speech-to-text without punctuation. The scene holds up to 5 objects, each with id, type, color, x, y and scale.
