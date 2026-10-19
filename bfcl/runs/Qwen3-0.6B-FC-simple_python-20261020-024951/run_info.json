@@ -1,0 +1,11 @@
+{
+  "model": "Qwen/Qwen3-0.6B-FC",
+  "categories": [
+    "simple_python"
+  ],
+  "run": "Qwen3-0.6B-FC-simple_python-20261020-024951",
+  "bfcl_version": "2026.3.23",
+  "gpu": "A10G",
+  "generate_minutes": 4.3,
+  "total_minutes": 4.5
+}

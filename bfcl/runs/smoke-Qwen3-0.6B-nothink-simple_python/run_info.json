@@ -1,0 +1,27 @@
+{
+  "model": "Qwen/Qwen3-0.6B-FC-nothink",
+  "categories": [
+    "simple_python"
+  ],
+  "run": "smoke-Qwen3-0.6B-nothink-simple_python",
+  "bfcl_version": "2026.3.23",
+  "gpu": "A10G",
+  "generation": {
+    "backend": "vllm",
+    "handler": "QwenFCHandler (BFCL built-in, FC mode)",
+    "thinking_mode": "per model: '-FC' = on (BFCL default: prompt ends with an open assistant turn; reasoning stripped before scoring); '-FC-nothink' = off (prompt ends with the empty <think></think> block, as Qwen3's enable_thinking=False template; see bfcl_cli.py)",
+    "temperature": 0.001,
+    "max_tokens": "context remaining after the prompt (BFCL default)"
+  },
+  "environment": {
+    "bfcl-eval": null,
+    "vllm": "0.8.5",
+    "transformers": "4.51.3",
+    "tokenizers": "0.21.4",
+    "torch": "2.6.0",
+    "qwen-agent": "0.0.34",
+    "bfcl_data_sha256": "fdf6eee576bcdeda11149cf3d2825bc9f6f6f7abe31fcb39c90e21a02a473319"
+  },
+  "generate_minutes": 2.6,
+  "total_minutes": 2.7
+}
