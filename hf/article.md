@@ -6,14 +6,15 @@ authors:
 
 # A 1.5B model beat prompted Gemini at turning speech into drawings. Its four regressions taught me more
 
-**TL;DR.** I fine-tuned Qwen2.5-1.5B-Instruct with LoRA to turn spoken instructions into JSON draw ops for a party game.
+**TL;DR.** I fine-tuned Qwen2.5-1.5B-Instruct with LoRA to turn spoken instructions into structured canvas operations for a party game, and shipped it in a live multiplayer game.
 
-- **On a 79-case hard benchmark:** 95% exact match, against 87% for prompted Gemini 3.5 Flash-Lite. It got all 24 refusal cases right, against Gemini's 18.
-- **On the easier v1 benchmark:** Gemini still leads by one case.
-- **Cost:** about two hours of a single A10G on Modal.
+- **On a 79-case adversarial benchmark:** 95% exact match vs 87% for prompted Gemini 3.5 Flash-Lite, with 24/24 correct refusals (Gemini got 18). Median latency is under a second.
+- **On the easier benchmark:** Gemini still leads, 98% vs 96%. That's one case.
+- **Compute:** about two A10G-hours on Modal.
+- **What mattered most:** the failures traced to my data, not the model's size. Fixing one flawed leakage rule recovered 4 of the easy benchmark's failed cases.
 - **The lesson that stuck:** every time I taught the model to refuse something, it started refusing nearby things that were fine.
 
-Everything is public: the [adapter](https://huggingface.co/kriyanshi/qwen2.5-1.5b-yap-scene-lora), the [synthetic training data](https://huggingface.co/datasets/kriyanshi/yap-scene-sft), and the [eval set](https://huggingface.co/datasets/kriyanshi/yap-scene-eval).
+**Play it:** https://yap.kriyanshishah06.workers.dev. Everything else is public too: the [adapter](https://huggingface.co/kriyanshi/qwen2.5-1.5b-yap-scene-lora), the [synthetic training data](https://huggingface.co/datasets/kriyanshi/yap-scene-sft), and the [eval set](https://huggingface.co/datasets/kriyanshi/yap-scene-eval).
 
 ## The task
 
@@ -129,9 +130,31 @@ The fourth is the mirror image. After adding many short positive relation adds, 
 
 I'm deliberately not fixing these four with a third run. Fixing single benchmark cases is how a dataset ends up tuned to its benchmark. They'll go into a v3 data run driven by real player failures.
 
+## Shipping it in a game
+
+Benchmarks are one thing; a game with real players is another. In Yap's demo build, the Yapper gets a secret scene like *"a blue cat under a tree"* and has to describe it **without saying "cat" or "tree"**. So the model gets exactly the kind of indirect speech it was trained on.
+
+Each utterance goes through a chain:
+1. **The fine-tuned Qwen,** with a 3-second timeout and the schema guard.
+2. **Gemini,** if Qwen times out, errors or gets rejected by the guard.
+3. **A keyword parser** as the last resort. The canvas is never cleared on a failure.
+
+When the model refuses a loose, shape-based description like "an orange round thing", a separate **best guess** lets Gemini *add* the closest object (an orange sun). It can never edit or remove anything.
+
+To check that descriptions actually produce the right picture, I wrote a **canvas check**. For each of the 18 game scenes, it plays a rule-following Yapper turn through the real chain, puts every line next to the canvas it produced, and checks objects, colours, counts, sizes and relations.
+
+- **The first pass scored 13/18,** with Qwen answering every line itself in about 0.8 s. The five failures shared one cause: a description combined with a relation or size ("put the animal that purrs **on it**", "a **small** place where people live") lost the relation or size, because my templates never combined them. That's another data gap, logged for the next run.
+- **Rewording fixed all five** ("on top of it", "make it small" as a separate edit), and those tested phrases became the game's **hints**. The Yapper can buy a hint for their bonus point. Every hint phrase is checked by the canvas check: **18/18 scenes draw correctly**.
+
+It also caught something no benchmark would. Two cats added "on the house" land on the same spot and look like one cat. The model was right; the layout engine wasn't.
+
+Two practical lessons from shipping:
+- **Cold starts matter more than model speed.** A sleeping GPU takes 15–25 seconds to wake, so the game warms it when a lobby opens.
+- **Infrastructure moves under you.** The hosted platform I'd built the game server on stopped accepting deploys mid-project, so I moved the server to Cloudflare Workers.
+
 ## Caveats
 
-- **These benchmarks are small.** One v1 case is worth 2 points, and the 96% vs 98% gap to Gemini on v1 is a single case. Each number comes from one run with greedy decoding.
+- **These benchmarks are small.** One v1 case is worth 2 points, and the 96% vs 98% gap to Gemini on v1 is a single case. Each number comes from one run with greedy decoding; a seed-variance run is next on my list.
 - **Run 2 isn't perfectly held-out.** No benchmark utterance is in the training data (the leakage check finds zero). But I revised run 2's data after studying run 1's benchmark failures, so run 2's scores are somewhat optimistic. Run 1 (90% raw / 92% guarded on v2) is the clean held-out number.
 - **Gemini was prompted, not tuned.** Its prompt was written before v2 existed.
 

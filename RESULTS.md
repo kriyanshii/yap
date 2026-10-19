@@ -2,7 +2,21 @@
 
 Yap is a party game where players speak, and their words become drawings on a shared canvas. The **scene mapper** turns one spoken instruction plus the current canvas into a JSON array of draw ops, which a deterministic scene engine (`src/scene/engine.ts`) executes.
 
-**Headline.** A LoRA fine-tune of Qwen2.5-1.5B-Instruct (run 2) scores **95% exact match on the 79-case hard benchmark (v2)**, against 87% for prompted Gemini 3.5 Flash-Lite and 37% for a keyword parser. It gets **24/24 correct refusals** on v2. On the easier v1 benchmark it scores **94% raw / 96% with the output guard**, against 98% for Gemini. That gap is one case. See the caveats: run 2's training data was revised after looking at run 1's benchmark failures, so run 1 (**90% raw / 92% guarded on v2**) is the cleanest held-out number.
+**Live demo:** https://yap.kriyanshishah06.workers.dev
+
+## Summary
+
+- **Result:** a LoRA fine-tune of **Qwen2.5-1.5B-Instruct** (about 2 A10G-hours on Modal) scores **95% exact match vs 87% for prompted Gemini 3.5 Flash-Lite** on a 79-case adversarial benchmark (v2), with **24/24 correct refusals**. Median latency is under 1 s on a warm A10G.
+- **Easier benchmark (v1):** 94% raw / 96% with the output guard, against 98% for Gemini. That gap is one case, which is within noise.
+- **Cleanest held-out number:** run 1 scored **90% raw / 92% guarded on v2**. Run 2's data was revised after studying run 1's benchmark failures, so its 95% is somewhat optimistic as a held-out estimate (see Caveats).
+- **Data and evaluation:**
+  - two hand-labelled benchmarks with a schema validator
+  - a template-first synthetic data pipeline (4,400 examples, labels verified by running them on the scene engine)
+  - a leakage check against both benchmarks
+- **Failure analysis:** the model's failures traced to the data, not model size.
+  - **Leakage rule:** a flawed leakage rule had removed short positive examples. Fixing it recovered **4 v1 cases** (relation_013, relation_014, relation_015 and focus_023). With the other data fixes, v1 went from **86% to 94% raw** (90% to 96% guarded).
+  - **Over-refusal:** one-sided "refuse when X" templates caused over-refusal (documented below).
+- **Shipped:** the model runs in a **live multiplayer game** on Cloudflare Workers + Durable Objects. It sits behind a schema guard, with Gemini and rule-based fallbacks. All 18 game scenes draw correctly from their hint phrases. The adapter, training data and eval set are public on Hugging Face.
 
 ## Published
 
@@ -10,7 +24,32 @@ Yap is a party game where players speak, and their words become drawings on a sh
 - Synthetic training data: [kriyanshi/yap-scene-sft](https://huggingface.co/datasets/kriyanshi/yap-scene-sft) (CC-BY-4.0)
 - Eval set, v1 and v2-hard, evaluation only: [kriyanshi/yap-scene-eval](https://huggingface.co/datasets/kriyanshi/yap-scene-eval) (CC-BY-4.0, with a canary GUID)
 
-Not yet integrated into the game. The live game composes whole pictures from about 20 stamps for taboo-style clues, while this model makes step-by-step edits on 5 object types. Integration is deferred until a data run teaches the game's own vocabulary.
+## In the live game
+
+In the demo build, a round's secret scene uses only the five types (e.g. *"a blue cat under a tree"*). The Yapper describes it without saying the object words, and each utterance goes through this pipeline:
+
+1. **Qwen (fine-tuned, Modal)** with a 3 s timeout. Its output passes the **schema guard**: any unknown type, target, relation or colour rejects the whole batch.
+2. **Gemini** with the same prompt and guard, used on a timeout, an error or a guard rejection.
+3. **The keyword parser,** if both fail. The canvas is never cleared on failure.
+4. **Best guess:** if the answer is a refusal, Gemini with a game prompt may still *add* the closest object from a loose description ("an orange round thing" → orange sun). It can never edit or remove anything.
+
+The scene engine applies the ops (one utterance is one undoable action), and the canvas renders its scene graph with Paint-style stamps. The secret scene never goes to the models or to guessers' browsers. A host-only panel shows which model answered each utterance and how fast.
+
+**Canvas check** (`eval/canvas-check.mts`): for each of the 18 demo scenes, a rule-following Yapper script runs through the real chain, and the final canvas is checked for objects, colours, counts, sizes and relations. A visual report puts each description next to the canvas it produced.
+
+| | scenes drawn correctly | lines answered by Qwen | median latency |
+|---|---|---|---|
+| first scripted pass | 13/18 | 49/49 | 0.76 s |
+| hint phrases (after rewording) | **18/18** | 50/50 | 0.78 s |
+
+The first pass found a data gap. Descriptions combined with a relation or a size ("put the animal that purrs **on it**", "a **small** place where people live") lost the relation or size, because the training templates never combined them. Rewording ("on top of it", "make it small" as a separate edit) works today, and those phrases became the in-game **hints**. The proper fix belongs in the next data run.
+
+**Known issue:** objects added without a position in separate utterances land on the same spot, so "two cats on a house" can look like one cat. That's an engine layout issue, not a model error.
+
+**Serving:**
+- The Qwen endpoint scales to zero, with one container at most.
+- The game warms it when a lobby opens and keeps it warm while a room is open. A cold start takes about 15–25 s.
+- PartyKit's hosted platform stopped accepting deploys in October 2026, so the game server was moved to PartyServer on Cloudflare Workers + Durable Objects.
 
 ## The task
 
@@ -161,7 +200,7 @@ Remaining run-2 failures: v2 asr_errors_120 ("on the rough" is still rejected) a
 
 ## Caveats
 
-- **Small samples.** One v1 case is worth 2 points and one v2 case about 1.3. The 96% vs 98% v1 gap to Gemini is one case. Each number is a single run with greedy decoding, with no variance across seeds.
+- **Small samples.** One v1 case is worth 2 points and one v2 case about 1.3. A seed-variance run (the same config, several seeds) would show which differences are real; it hasn't been done yet. The 96% vs 98% v1 gap to Gemini is one case. Each number is a single run with greedy decoding, with no variance across seeds.
 - **Held-out status.** No benchmark utterance is in the training data (leakage check: 0). Run 1's data was written without seeing any model's benchmark failures. Run 2's data was revised after studying run 1's v1 and v2 failures, so run 2's scores are optimistic as a held-out estimate. Run 1 (v2: 90% raw / 92% guarded) is the clean held-out result.
 - **Raw vs guarded.** Report both. The guard is a code check, not grammar-constrained decoding. Gemini used a JSON-schema response format but no scene-aware guard.
 - **Gemini's setup.** It was prompted, not fine-tuned. Its prompt was written before v2 and not revised for it.
