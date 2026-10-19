@@ -19,15 +19,23 @@ BFCL_VERSION = "2026.3.23"
 VOL = Path("/vol")
 GPU = "A10G"
 
-image = (
+base_image = (
     modal.Image.debian_slim(python_version="3.11")
     .apt_install("git", "libsndfile1")
     # soundfile: imported by qwen_agent (a bfcl-eval dependency) but declared by neither package.
     # transformers: bfcl-eval pins vllm==0.8.5, which breaks on transformers 5+/6+; 4.51.x is its era and supports Qwen3.
     .pip_install(f"bfcl-eval[oss-eval-vllm]=={BFCL_VERSION}", "soundfile", "transformers==4.51.3")
     .env({"HF_HUB_CACHE": str(VOL / "hf" / "hub"), "TOKENIZERS_PARALLELISM": "false"})
-    .add_local_file(Path(__file__).parent / "bfcl_cli.py", "/root/bfcl_cli.py")  # bfcl CLI + "-nothink" model entries
 )
+
+
+def with_sources(img: modal.Image) -> modal.Image:
+    """Local files go last (Modal requirement): the bfcl CLI wrapper and this module (imported by modal_train.py)."""
+    return (img.add_local_file(Path(__file__).parent / "bfcl_cli.py", "/root/bfcl_cli.py")
+            .add_local_python_source("modal_bfcl"))
+
+
+image = with_sources(base_image)
 BFCL = ["python", "/root/bfcl_cli.py"]
 volume = modal.Volume.from_name("bfcl-runs", create_if_missing=True)
 app = modal.App("bfcl-small")
@@ -81,8 +89,9 @@ def check_install() -> str:
 
 
 @app.function(image=image, gpu=GPU, volumes={str(VOL): volume}, timeout=4 * 60 * 60)
-def run_bfcl(model: str, categories: str, run: str) -> dict:
-    """Generates and evaluates `model` on `categories` (comma-separated BFCL categories or groups)."""
+def run_bfcl(model: str, categories: str, run: str, local_model_path: str = "") -> dict:
+    """Generates and evaluates `model` on `categories` (comma-separated BFCL categories or groups).
+    `local_model_path` runs BFCL's handler for `model` on other weights (e.g. a merged fine-tune on the volume)."""
     import os
 
     root = VOL / "runs" / run
@@ -92,13 +101,14 @@ def run_bfcl(model: str, categories: str, run: str) -> dict:
     started = time.time()
 
     sh([*BFCL, "generate", "--model", model, "--test-category", *cats,
-        "--backend", "vllm", "--num-gpus", "1", "--gpu-memory-utilization", "0.9"], cwd=root)
+        "--backend", "vllm", "--num-gpus", "1", "--gpu-memory-utilization", "0.9",
+        *(["--local-model-path", local_model_path] if local_model_path else [])], cwd=root)
     gen_min = (time.time() - started) / 60
     sh([*BFCL, "evaluate", "--model", model, "--test-category", *cats], cwd=root)
 
     scores = {p.name: p.read_text() for p in sorted((root / "score").glob("*.csv"))}
     info = {"model": model, "categories": cats, "run": run, "bfcl_version": BFCL_VERSION, "gpu": GPU,
-            "generation": GEN_SETTINGS, "environment": environment(),
+            "generation": GEN_SETTINGS, "environment": environment(), "local_model_path": local_model_path or None,
             "generate_minutes": round(gen_min, 1), "total_minutes": round((time.time() - started) / 60, 1)}
     (root / "run_info.json").write_text(json.dumps(info, indent=2))
     volume.commit()

@@ -1,0 +1,65 @@
+{
+  "model": "Qwen/Qwen3-1.7B-FC-nothink",
+  "categories": [
+    "simple_python"
+  ],
+  "run": "smoke1-bfcl-simple_python",
+  "bfcl_version": "2026.3.23",
+  "gpu": "A10G",
+  "generation": {
+    "backend": "vllm",
+    "handler": "QwenFCHandler (BFCL built-in, FC mode)",
+    "thinking_mode": "per model: '-FC' = on (BFCL default: prompt ends with an open assistant turn; reasoning stripped before scoring); '-FC-nothink' = off (prompt ends with the empty <think></think> block, as Qwen3's enable_thinking=False template; see bfcl_cli.py)",
+    "temperature": 0.001,
+    "max_tokens": "context remaining after the prompt (BFCL default)"
+  },
+  "environment": {
+    "bfcl-eval": "2026.3.23",
+    "vllm": "0.8.5",
+    "transformers": "4.51.3",
+    "tokenizers": "0.21.4",
+    "torch": "2.6.0",
+    "qwen-agent": "0.0.34",
+    "bfcl_data_sha256": "fdf6eee576bcdeda11149cf3d2825bc9f6f6f7abe31fcb39c90e21a02a473319"
+  },
+  "local_model_path": "/vol/models/smoke1",
+  "generate_minutes": 2.6,
+  "total_minutes": 2.7,
+  "train": {
+    "run": "smoke1",
+    "base": "Qwen/Qwen3-1.7B",
+    "epochs": 1.0,
+    "lr": 0.0002,
+    "lora_r": 16,
+    "max_len": 4096,
+    "max_steps": 20,
+    "examples": 20000,
+    "dropped_too_long": 0,
+    "train_loss": 0.11703051328659057,
+    "train_minutes": 2.1,
+    "data_sha256": {
+      "train.jsonl": "1ca9ec8f29b0667f7ce1b1e6dee4a451162dce9211645fb782e021009ce3a8f9",
+      "dev.jsonl": "6316dbcab1fa47aaaef9b98f1a302ddd67644591cd7b1becd7f539397b29b91e"
+    },
+    "bfcl_version": "2026.3.23",
+    "gpu": "A10G"
+  },
+  "dev_check": {
+    "base": {
+      "model": "Qwen/Qwen3-1.7B",
+      "positives": 23,
+      "refusals": 17,
+      "positive_exact": 0.7391,
+      "over_refusal": 0.0435,
+      "refusal_correct": 0.8235
+    },
+    "fine_tune": {
+      "model": "/vol/models/smoke1",
+      "positives": 23,
+      "refusals": 17,
+      "positive_exact": 0.8261,
+      "over_refusal": 0.087,
+      "refusal_correct": 0.9412
+    }
+  }
+}
