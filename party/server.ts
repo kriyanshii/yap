@@ -1,6 +1,7 @@
 import { Server, type Connection, type WSMessage } from "partyserver";
 import { SceneEngine, type Snapshot } from "../src/scene/engine.ts";
 import { DEMO_SCENES } from "./demoScenes";
+import { describeOps } from "./describe";
 import { fuzzyMatch, hitsBanned, sceneGuessMatches } from "./match";
 import { bestGuessStep, defaultChain, mapUtterance, readMapperEnv, warmUpQwen } from "./sceneMapper";
 import type {
@@ -236,16 +237,21 @@ export class YapServer extends Server<Env> {
       ops: result.ops,
     });
 
+    // Tell the yapper (only) what happened, right under their input.
     const yapper = this.connectionFor(this.yapperId);
+    const tell = (status: "drew" | "guess" | "nothing" | "failed", text: string) => {
+      if (yapper) this.send(yapper, { type: "yapResult", status, text });
+    };
     if (!result.mapper) {
-      if (yapper) this.send(yapper, { type: "toast", text: "The intern choked. Canvas unchanged, say it again." });
+      tell("failed", "Couldn't reach the artist. Nothing changed, say it again.");
       return;
     }
     if (result.ops.length === 0) {
-      if (yapper) this.send(yapper, { type: "toast", text: "Too vague, nothing drawn. One thing at a time: say what it is or does, then use \"it\" to change it." });
+      tell("nothing", "Nothing drawn: too vague. Say what it is or does, one thing at a time.");
       return;
     }
-    if (result.mapper === "best_guess" && yapper) this.send(yapper, { type: "toast", text: "The intern took a guess." });
+    const summary = describeOps(result.ops, before.objects);
+    tell(result.mapper === "best_guess" ? "guess" : "drew", result.mapper === "best_guess" ? `Best guess: ${summary[0].toLowerCase()}${summary.slice(1)}` : summary);
     this.repaint(before);
   }
 

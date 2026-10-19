@@ -36,11 +36,13 @@ export function Reveal({ state, youId, guesses, isHost, onAgain }: Props) {
         </header>
       ) : (
         <header className="brand compact">
-          <p className="reason">{reasonLabel(reveal?.reason)}</p>
+          <p className={`reason reason-${reveal?.reason ?? "none"}`}>{reasonLabel(reveal?.reason)}</p>
+          <span className="reveal-label">The scene was</span>
           <h2 className="clue-reveal">{reveal?.clue ?? "???"}</h2>
+          <p className="points-line">{pointsLine(reveal?.reason, reveal?.winnerName ?? null)}</p>
           <p className="roast">{reveal?.roast}</p>
           {reveal?.said ? (
-            <p className="said-line">They told the intern: {reveal.said}</p>
+            <p className="said-line">The Yapper said: {reveal.said}</p>
           ) : null}
         </header>
       )}
@@ -81,11 +83,11 @@ export function Reveal({ state, youId, guesses, isHost, onAgain }: Props) {
 
       {gameover && isHost && (
         <button type="button" className="btn primary" onClick={onAgain}>
-          One more disaster
+          Play again
         </button>
       )}
       {gameover && !isHost && (
-        <p className="muted center">Host is deciding whether to hurt you again.</p>
+        <p className="muted center">Waiting for the host to start another game.</p>
       )}
 
       {!gameover && (
@@ -96,8 +98,15 @@ export function Reveal({ state, youId, guesses, isHost, onAgain }: Props) {
 }
 
 function reasonLabel(reason: string | undefined) {
-  if (reason === "said_secret") return "YOU SAID IT.";
-  if (reason === "timeout") return "Times up.";
-  if (reason === "guessed") return "Someone had a brain.";
+  if (reason === "said_secret") return "🚫 The Yapper said a forbidden word!";
+  if (reason === "timeout") return "⏰ Time's up!";
+  if (reason === "guessed") return "🎉 Guessed it!";
   return "Reveal";
+}
+
+function pointsLine(reason: string | undefined, winner: string | null) {
+  if (reason === "guessed") return `${winner ?? "Someone"} +2 · Yapper +1`;
+  if (reason === "said_secret") return "Everyone else +1";
+  if (reason === "timeout") return "No points this round";
+  return "";
 }

@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import PartySocket from "partysocket";
-import type { DebugEntry, PublicState, ServerMessage } from "../../party/types";
+import type { DebugEntry, PublicState, ServerMessage, YapStatus } from "../../party/types";
 
 export type Secret = { clue: string; banned: string[] };
 export type PublicGuess = { name: string; text: string; correct: boolean };
+/** What the yapper's last utterance did; `n` counts results so the UI can tell a new one arrived. */
+export type YapResult = { status: YapStatus; text: string; n: number };
 
 export function partyHost(): string {
   const env = import.meta.env.VITE_PARTYKIT_HOST as string | undefined;
@@ -18,6 +20,7 @@ export function useRoom(code: string | null, name: string) {
   const [youId, setYouId] = useState<string | null>(null);
   const [secret, setSecret] = useState<Secret | null>(null);
   const [debug, setDebug] = useState<DebugEntry[]>([]);
+  const [yapResult, setYapResult] = useState<YapResult | null>(null);
   const [guesses, setGuesses] = useState<PublicGuess[]>([]);
   const [toasts, setToasts] = useState<string[]>([]);
   const [connected, setConnected] = useState(false);
@@ -90,11 +93,16 @@ export function useRoom(code: string | null, name: string) {
         setDebug(msg.entries);
         return;
       }
+      if (msg.type === "yapResult") {
+        setYapResult((prev) => ({ status: msg.status, text: msg.text, n: (prev?.n ?? 0) + 1 }));
+        return;
+      }
       if (msg.type === "state") {
         const prev = stateRef.current;
         if (!prev || prev.round !== msg.state.round) {
           setSecret(null);
           setGuesses([]);
+          setYapResult(null);
         }
         if (msg.state.phase !== "countdown" && msg.state.phase !== "playing") {
           setSecret(null);
@@ -123,6 +131,7 @@ export function useRoom(code: string | null, name: string) {
     secret,
     guesses,
     debug,
+    yapResult,
     toasts,
     connected,
     send,

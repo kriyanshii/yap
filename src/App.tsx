@@ -4,6 +4,7 @@ import { Play } from "./game/Play";
 import { Reveal } from "./game/Reveal";
 import { useRoom } from "./game/useRoom";
 import { DebugPanel } from "./game/DebugPanel";
+import { HowToPlay } from "./game/HowToPlay";
 
 const ALPH = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -31,7 +32,8 @@ export function App() {
   const [room, setRoom] = useState<string | null>(
     initialRoom.length === 4 ? initialRoom : null,
   );
-  const { state, youId, secret, guesses, debug, toasts, connected, send } = useRoom(room, name);
+  const { state, youId, secret, guesses, debug, yapResult, toasts, connected, send } = useRoom(room, name);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const enterRoom = (code: string) => {
     const next = code.toUpperCase();
@@ -83,6 +85,7 @@ export function App() {
             canStart={isHost && connectedCount >= 2}
             onStart={() => send({ type: "start" })}
             connected={connected}
+            onHelp={() => setHelpOpen(true)}
           />
         )}
 
@@ -92,7 +95,9 @@ export function App() {
             youId={youId}
             secret={secret}
             guesses={guesses}
+            yapResult={yapResult}
             send={send}
+            onHelp={() => setHelpOpen(true)}
           />
         )}
 
@@ -108,6 +113,7 @@ export function App() {
       </main>
 
       {showDebug && <DebugPanel entries={debug} />}
+      {helpOpen && <HowToPlay onClose={() => setHelpOpen(false)} />}
 
       <div className="toasts" aria-live="polite">
         {toasts.map((t) => (

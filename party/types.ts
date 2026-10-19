@@ -168,4 +168,8 @@ export type ServerMessage =
   | { type: "state"; state: PublicState }
   | { type: "guess"; name: string; text: string; correct: boolean }
   | { type: "toast"; text: string }
-  | { type: "debug"; entries: DebugEntry[] };
+  | { type: "debug"; entries: DebugEntry[] }
+  /** To the yapper only: what their last utterance did to the canvas. */
+  | { type: "yapResult"; status: YapStatus; text: string };
+
+export type YapStatus = "drew" | "guess" | "nothing" | "failed";

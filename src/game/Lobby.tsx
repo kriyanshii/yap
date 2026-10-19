@@ -34,6 +34,7 @@ type Props = {
   canStart: boolean;
   onStart: () => void;
   connected: boolean;
+  onHelp: () => void;
 };
 
 export function Lobby({
@@ -50,6 +51,7 @@ export function Lobby({
   canStart,
   onStart,
   connected,
+  onHelp,
 }: Props) {
   const [copied, setCopied] = useState(false);
   const inRoom = Boolean(roomCode);
@@ -71,6 +73,10 @@ export function Lobby({
     }
   };
 
+  const online = players.filter((p) => p.connected);
+  const hostName = players.find((p) => p.id === hostId)?.name ?? "the host";
+  const need = Math.max(0, 2 - online.length);
+
   return (
     <div className="lobby">
       <header className="brand">
@@ -80,8 +86,15 @@ export function Lobby({
 
       {!inRoom && (
         <div className="lobby-card">
-          <label>
-            You are
+          <ol className="steps">
+            <li><b>1</b><span>One player gets a <b>secret scene</b> and describes it out loud, without saying the object words.</span></li>
+            <li><b>2</b><span>An <b>AI artist</b> draws what they say, live.</span></li>
+            <li><b>3</b><span>Everyone else <b>guesses</b> the scene from the drawing.</span></li>
+          </ol>
+          <button type="button" className="help-link block" onClick={onHelp}>How to play (1 min read)</button>
+
+          <label className="field">
+            Your name
             <input
               value={name}
               maxLength={18}
@@ -92,7 +105,7 @@ export function Lobby({
           <button type="button" className="btn primary" onClick={onCreate}>
             Create a room
           </button>
-          <div className="or">or crawl into someone else's</div>
+          <div className="or">or join a friend's room</div>
           <div className="join-row">
             <input
               value={codeInput}
@@ -102,6 +115,10 @@ export function Lobby({
               maxLength={4}
               autoCapitalize="characters"
               spellCheck={false}
+              aria-label="Room code"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && codeInput.length === 4) onJoin();
+              }}
             />
             <button type="button" className="btn" onClick={onJoin} disabled={codeInput.length < 4}>
               Join
@@ -112,36 +129,40 @@ export function Lobby({
 
       {inRoom && (
         <div className="lobby-card room">
+          <span className="field-label">Room code: share it or the link</span>
           <div className="room-code" aria-label="Room code">
             {roomCode}
           </div>
           <button type="button" className="btn slim" onClick={copyLink}>
-            {copied ? "Stolen. Now recruit." : "Copy link"}
+            {copied ? "Link copied! Send it to your friends" : "Copy invite link"}
           </button>
-          {!connected && <p className="muted">Finding the sofa…</p>}
+          {!connected && <p className="muted">Connecting…</p>}
+
+          <span className="field-label">Players ({online.length})</span>
           <ul className="player-list">
-            {players.length === 0 && <li className="empty">Waiting for victims.</li>}
+            {players.length === 0 && <li className="empty">Waiting for players…</li>}
             {players.map((p) => (
               <li key={p.id} className={p.connected ? "" : "ghost"}>
                 <span>{p.name}</span>
                 {p.id === hostId ? <em>host</em> : null}
-                {p.connected ? null : <em>rage-quit</em>}
+                {p.connected ? null : <em>left</em>}
               </li>
             ))}
           </ul>
-          {players.length === 1 && <p className="muted">Waiting for victims.</p>}
-          {isHost ? (
-            <button
-              type="button"
-              className="btn primary"
-              onClick={onStart}
-              disabled={!canStart}
-            >
-              {canStart ? "Start the disaster" : "Need at least two"}
+
+          <p className={`lobby-status ${need === 0 ? "ready" : ""}`}>
+            {need > 0
+              ? `Need ${need} more player${need > 1 ? "s" : ""} to start. Share the code!`
+              : isHost
+                ? "Everyone in? Press Start."
+                : `Ready! Waiting for ${hostName} to start.`}
+          </p>
+          {isHost && (
+            <button type="button" className="btn primary" onClick={onStart} disabled={!canStart}>
+              Start game
             </button>
-          ) : (
-            <p className="muted">Host is stalling. Sit tight.</p>
           )}
+          <button type="button" className="help-link block" onClick={onHelp}>How to play</button>
         </div>
       )}
     </div>
