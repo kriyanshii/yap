@@ -74,6 +74,10 @@ export class YapServer extends Server<Env> {
   engine = new SceneEngine();
   /** The yapper's utterances this round. Kept on the server until the reveal. */
   roundUtterances: string[] = [];
+  /** The yapper opened this round's hint, which costs their bonus point. */
+  hintUsed = false;
+  /** Players who already used their one skip this game. */
+  skipsUsed = new Set<string>();
   debugLog: DebugEntry[] = [];
 
   private tickTimer: ReturnType<typeof setInterval> | null = null;
@@ -119,6 +123,12 @@ export class YapServer extends Server<Env> {
         break;
       case "guess":
         this.handleGuess(sender, msg.text);
+        break;
+      case "hint":
+        this.handleHint(sender);
+        break;
+      case "skip":
+        this.handleSkip(sender);
         break;
       default:
         break;
@@ -189,6 +199,7 @@ export class YapServer extends Server<Env> {
 
     for (const p of this.players.values()) p.score = 0;
     this.usedClueIds.clear();
+    this.skipsUsed.clear();
     this.round = 0;
     this.yapperId = null;
     void this.warmUp("game started");
@@ -306,6 +317,47 @@ export class YapServer extends Server<Env> {
     return id ? [...this.getConnections()].find((c) => c.id === id) : undefined;
   }
 
+  /** Yapper-only: sends the scene's hint to the yapper (and nobody else). The first request costs the bonus point. */
+  private handleHint(sender: Connection) {
+    if ((this.phase !== "countdown" && this.phase !== "playing") || this.roundClosed) return;
+    if (sender.id !== this.yapperId) {
+      this.send(sender, { type: "toast", text: "Only the Yapper gets hints." });
+      return;
+    }
+    if (!this.clue?.hint) {
+      this.send(sender, { type: "toast", text: "No hint for this scene." });
+      return;
+    }
+    const first = !this.hintUsed;
+    this.hintUsed = true;
+    this.send(sender, { type: "hint", hint: this.clue.hint });
+    if (first) this.broadcastState();
+  }
+
+  /** Yapper-only, once per player per game: a new scene and a fresh canvas. The timer keeps running. */
+  private handleSkip(sender: Connection) {
+    if ((this.phase !== "countdown" && this.phase !== "playing") || this.roundClosed) return;
+    if (sender.id !== this.yapperId) return;
+    if (this.skipsUsed.has(sender.id)) {
+      this.send(sender, { type: "toast", text: "You already used your skip this game." });
+      return;
+    }
+    this.skipsUsed.add(sender.id);
+    this.clue = this.pickClue();
+    this.engine = new SceneEngine();
+    this.utteranceQueue = Promise.resolve();
+    this.roundUtterances = [];
+    this.hintUsed = false;
+    this.drawingOps = [];
+    this.prompt = "";
+    this.paintingGeneration += 1;
+    this.paintStartedAt = Date.now();
+    const yapper = this.players.get(sender.id);
+    this.broadcastMsg({ type: "toast", text: `${yapper?.name ?? "The Yapper"} skipped the scene. Fresh canvas!` });
+    this.broadcastState();
+    this.sendSecretToYapper();
+  }
+
   private handleGuess(sender: Connection, raw: string) {
     if (this.phase !== "playing" || this.roundClosed) return;
     const player = this.players.get(sender.id);
@@ -356,6 +408,7 @@ export class YapServer extends Server<Env> {
     this.engine = new SceneEngine();
     this.utteranceQueue = Promise.resolve();
     this.roundUtterances = [];
+    this.hintUsed = false;
     this.roundClosed = false;
     this.reveal = undefined;
     this.phase = "countdown";
@@ -397,7 +450,8 @@ export class YapServer extends Server<Env> {
     if (reason === "guessed" && winner) {
       winner.score += 2;
       const yapper = this.yapperId ? this.players.get(this.yapperId) : null;
-      if (yapper) yapper.score += 1;
+      // A hint costs the yapper their bonus point.
+      if (yapper && !this.hintUsed) yapper.score += 1;
     } else if (reason === "said_secret") {
       for (const p of this.players.values()) {
         if (p.id !== this.yapperId && p.connected) p.score += 1;
@@ -411,6 +465,7 @@ export class YapServer extends Server<Env> {
       winnerName,
       roast: roastFor(reason, winnerName),
       said: this.roundUtterances.join(", "),
+      hintUsed: this.hintUsed,
     };
     this.phase = "reveal";
     this.timeLeft = REVEAL_S;
@@ -520,6 +575,8 @@ export class YapServer extends Server<Env> {
     this.utteranceQueue = Promise.resolve();
     this.debugLog = [];
     this.lastWarmAt = 0;
+    this.hintUsed = false;
+    this.skipsUsed.clear();
     this.usedClueIds.clear();
     this.clue = null;
     this.reveal = undefined;
@@ -546,6 +603,7 @@ export class YapServer extends Server<Env> {
       paintStartedAt: this.paintStartedAt,
       drawingOps: this.drawingOps,
       sceneMode: true,
+      hintUsed: this.hintUsed,
       reveal: this.phase === "reveal" || this.phase === "gameover" ? this.reveal : undefined,
     };
   }
@@ -567,7 +625,10 @@ export class YapServer extends Server<Env> {
       type: "secret",
       clue: this.clue.text,
       banned: this.clue.banned,
+      canSkip: !this.skipsUsed.has(connection.id),
     });
+    // A reconnecting yapper gets back the hint they already paid for.
+    if (this.hintUsed && this.clue.hint) this.send(connection, { type: "hint", hint: this.clue.hint });
   }
 
   private send(connection: Connection, msg: ServerMessage) {

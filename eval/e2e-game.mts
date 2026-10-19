@@ -71,11 +71,22 @@ yapper.send({ type: "utterance", text: "this game is so hard lol" });
 await sleep(4000);
 check(JSON.stringify(guesser.state.drawingOps) === before, "chatter left the canvas unchanged");
 
+// Hint: only the yapper receives it; it is flagged publicly and costs the yapper's bonus point.
+const yapperScoreBefore = guesser.state.players.find((p: any) => p.id === guesser.state.yapperId).score;
+yapper.send({ type: "hint" });
+await until("hint arrives", () => yapper.inbox.some((m) => m.type === "hint"), 5000);
+const hintMsg = yapper.last("hint")!;
+check(Array.isArray(hintMsg.hint?.phrases) && hintMsg.hint.phrases.length >= 2, `yapper received a hint: "${hintMsg.hint?.meaning}"`);
+await until("hintUsed in state", () => guesser.state.hintUsed === true, 5000);
+check(!guesser.inbox.some((m) => m.type === "hint" || JSON.stringify(m).includes(hintMsg.hint.meaning)), "guesser saw that a hint was used, but never the hint itself");
+
 // A correct guess (names every object/color in the scene) ends the round; the reveal carries what was said.
 guesser.send({ type: "guess", text: secret.clue });
 await until("reveal", () => guesser.state?.phase === "reveal", 10000);
 check(guesser.state.reveal?.reason === "guessed", "guessing the scene ended the round");
 check((guesser.state.reveal?.said ?? "").includes("tall plant"), "the reveal shows what the yapper said");
+const yapperScoreAfter = guesser.state.players.find((p: any) => p.id === guesser.state.yapperId).score;
+check(guesser.state.reveal?.hintUsed === true && yapperScoreAfter === yapperScoreBefore, `hint cost the yapper's bonus (score ${yapperScoreBefore} -> ${yapperScoreAfter})`);
 await until("host debug log after the round", () => host.inbox.some((m) => m.type === "debug" && m.entries.some((e: any) => e.utterance === "make it gray")), 5000).catch(() => {});
 const log = [...host.inbox].reverse().find((m) => m.type === "debug")?.entries ?? [];
 check(log.some((e: any) => e.utterance === "make it gray"), "host received the round's debug log after the reveal");
@@ -90,6 +101,19 @@ yapper2.send({ type: "utterance", text: "draw a woody plant that grows tall" });
 await sleep(5000);
 const liveLeak = host.inbox.slice(0).filter((m) => m.type === "debug").slice(debugCountBefore).some((m) => JSON.stringify(m).includes("woody plant"));
 check(hostGuessingNow && !liveLeak, `round 2: host is guessing (yapper is ${yapper2.name}) and got no live debug entry for the yapper's utterance`);
+
+// Skip: once per game, new scene, blank canvas; a second skip is refused.
+const guesser2 = yapper2 === a ? b : a;
+const oldScene = yapper2.last("secret")!.clue;
+await until("round 2 canvas has something", () => guesser2.state.drawingOps.length > 0, 15000).catch(() => {});
+yapper2.send({ type: "skip" });
+await until("new secret after skip", () => yapper2.last("secret")!.clue !== oldScene, 5000);
+await until("canvas cleared", () => guesser2.state.drawingOps.length === 0, 5000);
+check(yapper2.last("secret")!.canSkip === false, `skip gave a new scene ("${oldScene}" -> "${yapper2.last("secret")!.clue}") and a blank canvas`);
+const sceneAfterSkip = yapper2.last("secret")!.clue;
+yapper2.send({ type: "skip" });
+await sleep(1500);
+check(yapper2.last("secret")!.clue === sceneAfterSkip, "a second skip in the same game is refused");
 
 a.ws.close(); b.ws.close();
 console.log(failures ? `\n${failures} check(s) failed` : "\nall checks passed");

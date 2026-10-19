@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
-// Canvas check: for every demo scene, play a scripted Yapper turn (no banned words) through the real mapper chain and
-// scene engine, then put the descriptions next to the canvas they produced and check the canvas against the scene.
+// Canvas check: for every demo scene, say its hint phrases (no banned words) through the real mapper chain and scene
+// engine, then put the descriptions next to the canvas they produced and check the canvas against the scene.
 // Usage: npx tsx eval/canvas-check.mts        (reads .env; calls the live Qwen endpoint and Gemini)
 // Writes results/canvas-check-<stamp>.html (open it in a browser) and .shots/canvas-check.png.
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -21,46 +21,29 @@ interface Expect {
   relations?: ([string, Rel, string] | [string, Rel, string, "all" | "some"])[];
   spots?: [string, Spot][];
 }
-interface Case { id: string; lines: string[]; expect: Expect }
+interface Case { id: string; expect: Expect }
 
-// One scripted Yapper turn per demo scene: describe by what things are or do, then edit with "it".
+// What each demo scene's canvas must show. The Yapper script is the scene's hint phrases (party/demoScenes.ts), so this
+// checks the hints themselves draw the scene.
 const CASES: Case[] = [
-  { id: "cat-house-sun", lines: ["the place where people live", "put the animal that purrs on it", "add the bright light of daytime at the top"],
-    expect: { objects: [{ type: "cat" }, { type: "house" }, { type: "sun" }], relations: [["cat", "on", "house"], ["sun", "above", "house"]] } },
-  { id: "tree-red-house", lines: ["the place where people live", "make it red", "put a tall plant with branches next to it"],
-    expect: { objects: [{ type: "house", color: "red" }, { type: "tree" }], relations: [["tree", "next_to", "house"]] } },
-  { id: "clouds-tree", lines: ["a tall plant with branches", "put two fluffy patches of mist above it"],
-    expect: { objects: [{ type: "tree" }, { type: "cloud", count: 2 }], relations: [["cloud", "above", "tree"]] } },
-  { id: "blue-cat-tree", lines: ["a tall plant with branches", "put the animal that purrs under it", "make it blue"],
-    expect: { objects: [{ type: "tree" }, { type: "cat", color: "blue" }], relations: [["cat", "under", "tree"]] } },
-  { id: "sun-cloud-top", lines: ["the bright light of daytime at the top", "a fluffy patch of mist at the top"],
-    expect: { objects: [{ type: "sun" }, { type: "cloud" }], spots: [["sun", "top"], ["cloud", "top"]] } },
-  { id: "yellow-house-sun", lines: ["the place where people live", "make it yellow", "put the bright light of daytime above it"],
-    expect: { objects: [{ type: "house", color: "yellow" }, { type: "sun" }], relations: [["sun", "above", "house"]] } },
-  { id: "three-trees", lines: ["three tall plants with branches", "add the animal that purrs"],
-    expect: { objects: [{ type: "tree", count: 3 }, { type: "cat" }] } },
-  { id: "cat-tree-left", lines: ["a tall plant with branches on the left", "put the animal that purrs next to it"],
-    expect: { objects: [{ type: "tree" }, { type: "cat" }], relations: [["cat", "next_to", "tree"]], spots: [["tree", "left"]] } },
-  { id: "gray-cloud-house", lines: ["the place where people live", "put a fluffy patch of mist above it", "make it gray"],
-    expect: { objects: [{ type: "house" }, { type: "cloud", color: "gray" }], relations: [["cloud", "above", "house"]] } },
-  { id: "big-sun-small-cloud", lines: ["the bright light of daytime", "make it big", "add a small fluffy patch of mist"],
-    expect: { objects: [{ type: "sun", size: "big" }, { type: "cloud", size: "small" }] } },
-  { id: "pink-tree-green-cat", lines: ["a tall plant with branches", "make it pink", "add the animal that purrs", "make it green"],
-    expect: { objects: [{ type: "tree", color: "pink" }, { type: "cat", color: "green" }] } },
-  { id: "two-cats-house", lines: ["the place where people live", "put two animals that purr on it"],
-    expect: { objects: [{ type: "house" }, { type: "cat", count: 2 }], relations: [["cat", "on", "house"]] } },
-  { id: "house-trees-sides", lines: ["a tall plant with branches on the left", "the place where people live in the middle", "another tall plant with branches on the right"],
-    expect: { objects: [{ type: "house" }, { type: "tree", count: 2 }], relations: [["tree", "left_of", "house", "some"], ["tree", "right_of", "house", "some"]] } },
-  { id: "black-cat-cloud", lines: ["a fluffy patch of mist", "put the animal that purrs under it", "make it black"],
-    expect: { objects: [{ type: "cloud" }, { type: "cat", color: "black" }], relations: [["cat", "under", "cloud"]] } },
-  { id: "purple-sun-tree", lines: ["a tall plant with branches", "put the bright light of daytime above it", "make it purple"],
-    expect: { objects: [{ type: "tree" }, { type: "sun", color: "purple" }], relations: [["sun", "above", "tree"]] } },
-  { id: "white-house-orange-cat", lines: ["the place where people live", "make it white", "add the animal that purrs", "make it orange"],
-    expect: { objects: [{ type: "house", color: "white" }, { type: "cat", color: "orange" }] } },
-  { id: "tree-right-house-left", lines: ["a tall plant with branches on the right", "the place where people live on the left"],
-    expect: { objects: [{ type: "tree" }, { type: "house" }], spots: [["tree", "right"], ["house", "left"]] } },
-  { id: "small-house-big-cloud", lines: ["a small place where people live", "put a big fluffy patch of mist above it"],
-    expect: { objects: [{ type: "house", size: "small" }, { type: "cloud", size: "big" }], relations: [["house", "under", "cloud"]] } },
+  { id: "cat-house-sun", expect: { objects: [{ type: "cat" }, { type: "house" }, { type: "sun" }], relations: [["cat", "on", "house"], ["sun", "above", "house"]] } },
+  { id: "tree-red-house", expect: { objects: [{ type: "house", color: "red" }, { type: "tree" }], relations: [["tree", "next_to", "house"]] } },
+  { id: "clouds-tree", expect: { objects: [{ type: "tree" }, { type: "cloud", count: 2 }], relations: [["cloud", "above", "tree"]] } },
+  { id: "blue-cat-tree", expect: { objects: [{ type: "tree" }, { type: "cat", color: "blue" }], relations: [["cat", "under", "tree"]] } },
+  { id: "sun-cloud-top", expect: { objects: [{ type: "sun" }, { type: "cloud" }], spots: [["sun", "top"], ["cloud", "top"]] } },
+  { id: "yellow-house-sun", expect: { objects: [{ type: "house", color: "yellow" }, { type: "sun" }], relations: [["sun", "above", "house"]] } },
+  { id: "three-trees", expect: { objects: [{ type: "tree", count: 3 }, { type: "cat" }] } },
+  { id: "cat-tree-left", expect: { objects: [{ type: "tree" }, { type: "cat" }], relations: [["cat", "next_to", "tree"]], spots: [["tree", "left"]] } },
+  { id: "gray-cloud-house", expect: { objects: [{ type: "house" }, { type: "cloud", color: "gray" }], relations: [["cloud", "above", "house"]] } },
+  { id: "big-sun-small-cloud", expect: { objects: [{ type: "sun", size: "big" }, { type: "cloud", size: "small" }] } },
+  { id: "pink-tree-green-cat", expect: { objects: [{ type: "tree", color: "pink" }, { type: "cat", color: "green" }] } },
+  { id: "two-cats-house", expect: { objects: [{ type: "house" }, { type: "cat", count: 2 }], relations: [["cat", "on", "house"]] } },
+  { id: "house-trees-sides", expect: { objects: [{ type: "house" }, { type: "tree", count: 2 }], relations: [["tree", "left_of", "house", "some"], ["tree", "right_of", "house", "some"]] } },
+  { id: "black-cat-cloud", expect: { objects: [{ type: "cloud" }, { type: "cat", color: "black" }], relations: [["cat", "under", "cloud"]] } },
+  { id: "purple-sun-tree", expect: { objects: [{ type: "tree" }, { type: "sun", color: "purple" }], relations: [["sun", "above", "tree"]] } },
+  { id: "white-house-orange-cat", expect: { objects: [{ type: "house", color: "white" }, { type: "cat", color: "orange" }] } },
+  { id: "tree-right-house-left", expect: { objects: [{ type: "tree" }, { type: "house" }], spots: [["tree", "right"], ["house", "left"]] } },
+  { id: "small-house-big-cloud", expect: { objects: [{ type: "house", size: "small" }, { type: "cloud", size: "big" }], relations: [["house", "under", "cloud"]] } },
 ];
 
 function holds(rel: Rel, a: SceneObject, b: SceneObject): boolean {
@@ -119,7 +102,7 @@ for (const c of CASES) {
   const scene = DEMO_SCENES.find((s) => s.id === c.id)!;
   const engine = new SceneEngine();
   const lines: LineResult[] = [];
-  for (const text of c.lines) {
+  for (const text of scene.hint!.phrases) {
     const before = engine.snapshot().objects;
     const r = await mapUtterance(
       { utterance: text, scene: { objects: before }, focus_id: engine.state.focus_id, history_len: engine.state.history.length },
@@ -133,7 +116,7 @@ for (const c of CASES) {
   }
   const objects = engine.state.objects;
   const problems = check(objects, c.expect);
-  const bannedSaid = c.lines.filter((l) => hitsBanned(l, scene.banned));
+  const bannedSaid = scene.hint!.phrases.filter((l) => hitsBanned(l, scene.banned));
   results.push({ id: c.id, scene: scene.text, banned: scene.banned, lines, objects, problems, bannedSaid });
   console.log(`${problems.length ? "FAIL" : "PASS"}  ${scene.text}${problems.length ? `  (${problems.join("; ")})` : ""}`);
   for (const l of lines) console.log(`        "${l.text}" -> [${l.mapper} ${l.ms}ms] ${l.did}  ${l.ops}`);

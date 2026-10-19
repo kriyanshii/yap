@@ -16,6 +16,8 @@ export type PublicReveal = {
   roast: string;
   /** What the yapper said this round, published only after the round ends. */
   said?: string;
+  /** The yapper used a hint, so they got no bonus point. */
+  hintUsed?: boolean;
 };
 
 export const DRAWING_STAMPS = [
@@ -132,6 +134,8 @@ export type PublicState = {
   drawingOps: DrawingOp[];
   /** drawingOps is the scene engine's full scene graph (an empty list means an empty canvas). */
   sceneMode: boolean;
+  /** The yapper opened this round's hint (it costs their bonus point). The hint itself goes only to the yapper. */
+  hintUsed: boolean;
   reveal?: PublicReveal;
 };
 
@@ -142,7 +146,11 @@ export type Clue = {
   pack: "easy" | "weird" | "culture" | "demo";
   /** Words a guess must contain (demo scenes); without it, guesses are fuzzy-matched against `text`. */
   required?: string[];
+  /** Yapper-only help: what the scene is (no banned words) and phrases the artist understands. */
+  hint?: Hint;
 };
+
+export type Hint = { meaning: string; phrases: string[] };
 
 /** Host-only debug log entry: which mapper answered one utterance, how fast, and with what. */
 export type DebugEntry = {
@@ -160,11 +168,14 @@ export type ClientMessage =
   | { type: "join"; name: string }
   | { type: "start" }
   | { type: "utterance"; text: string }
-  | { type: "guess"; text: string };
+  | { type: "guess"; text: string }
+  | { type: "hint" }
+  | { type: "skip" };
 
 export type ServerMessage =
   | { type: "you"; id: string; isHost: boolean }
-  | { type: "secret"; clue: string; banned: string[] }
+  | { type: "secret"; clue: string; banned: string[]; canSkip: boolean }
+  | { type: "hint"; hint: Hint }
   | { type: "state"; state: PublicState }
   | { type: "guess"; name: string; text: string; correct: boolean }
   | { type: "toast"; text: string }

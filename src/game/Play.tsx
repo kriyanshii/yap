@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { PaintWindow } from "../paint/PaintWindow";
-import type { PublicState } from "../../party/types";
+import type { Hint, PublicState } from "../../party/types";
 import { useMic } from "./useMic";
 import type { PublicGuess, Secret, YapResult } from "./useRoom";
 
@@ -10,6 +10,7 @@ type Props = {
   secret: Secret | null;
   guesses: PublicGuess[];
   yapResult: YapResult | null;
+  hint: Hint | null;
   send: (body: object) => void;
   onHelp: () => void;
 };
@@ -17,7 +18,7 @@ type Props = {
 const EXAMPLES = ["the animal that purrs", "the bright light of daytime", "make it blue", "make it bigger", "move it to the left", "undo"];
 const STATUS_ICON: Record<string, string> = { drew: "✅", guess: "🎲", nothing: "🤔", failed: "⚠️" };
 
-export function Play({ state, youId, secret, guesses, yapResult, send, onHelp }: Props) {
+export function Play({ state, youId, secret, guesses, yapResult, hint, send, onHelp }: Props) {
   const isYapper = youId === state.yapperId;
   const playing = state.phase === "playing";
   const me = state.players.find((p) => p.id === youId);
@@ -89,6 +90,39 @@ export function Play({ state, youId, secret, guesses, yapResult, send, onHelp }:
               <b key={w} className="banned-chip">{w}</b>
             ))}
           </div>
+          <div className="secret-actions">
+            {!state.hintUsed ? (
+              <button type="button" className="btn slim" onClick={() => send({ type: "hint" })}>
+                💡 Hint <small>(costs your +1)</small>
+              </button>
+            ) : !hint ? (
+              <button type="button" className="btn slim" onClick={() => send({ type: "hint" })}>💡 Show hint again</button>
+            ) : null}
+            {secret.canSkip && (
+              <button
+                type="button"
+                className="btn slim"
+                onClick={() => {
+                  if (window.confirm("Skip this scene? You get one skip per game, and the timer keeps running.")) send({ type: "skip" });
+                }}
+              >
+                ⏭ Skip scene <small>(1 per game)</small>
+              </button>
+            )}
+          </div>
+          {hint && (
+            <div className="hint-panel" aria-live="polite">
+              <p><b>💡 What it is:</b> {hint.meaning}</p>
+              <p className="hint-try">Try saying, one at a time (tap to use):</p>
+              <div className="example-chips">
+                {hint.phrases.map((ph) => (
+                  <button key={ph} type="button" onClick={() => setTyped(ph)} disabled={!playing}>
+                    {ph}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
       ) : (
         <section className="secret-card guesser" aria-label="Your role">

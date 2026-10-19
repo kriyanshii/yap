@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import PartySocket from "partysocket";
-import type { DebugEntry, PublicState, ServerMessage, YapStatus } from "../../party/types";
+import type { DebugEntry, Hint, PublicState, ServerMessage, YapStatus } from "../../party/types";
 
-export type Secret = { clue: string; banned: string[] };
+export type Secret = { clue: string; banned: string[]; canSkip: boolean };
 export type PublicGuess = { name: string; text: string; correct: boolean };
 /** What the yapper's last utterance did; `n` counts results so the UI can tell a new one arrived. */
 export type YapResult = { status: YapStatus; text: string; n: number };
@@ -21,6 +21,7 @@ export function useRoom(code: string | null, name: string) {
   const [secret, setSecret] = useState<Secret | null>(null);
   const [debug, setDebug] = useState<DebugEntry[]>([]);
   const [yapResult, setYapResult] = useState<YapResult | null>(null);
+  const [hint, setHint] = useState<Hint | null>(null);
   const [guesses, setGuesses] = useState<PublicGuess[]>([]);
   const [toasts, setToasts] = useState<string[]>([]);
   const [connected, setConnected] = useState(false);
@@ -78,7 +79,14 @@ export function useRoom(code: string | null, name: string) {
         return;
       }
       if (msg.type === "secret") {
-        setSecret({ clue: msg.clue, banned: msg.banned });
+        setSecret((prev) => {
+          if (prev?.clue !== msg.clue) setHint(null); // a skip brings a new scene, so the old hint no longer applies
+          return { clue: msg.clue, banned: msg.banned, canSkip: msg.canSkip };
+        });
+        return;
+      }
+      if (msg.type === "hint") {
+        setHint(msg.hint);
         return;
       }
       if (msg.type === "guess") {
@@ -103,6 +111,7 @@ export function useRoom(code: string | null, name: string) {
           setSecret(null);
           setGuesses([]);
           setYapResult(null);
+          setHint(null);
         }
         if (msg.state.phase !== "countdown" && msg.state.phase !== "playing") {
           setSecret(null);
@@ -132,6 +141,7 @@ export function useRoom(code: string | null, name: string) {
     guesses,
     debug,
     yapResult,
+    hint,
     toasts,
     connected,
     send,

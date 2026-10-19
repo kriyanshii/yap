@@ -61,6 +61,9 @@ try {
     await shot(yapper, `${vpName}-06-play-yapper`);
     await shot(guesser, `${vpName}-07-play-guesser`);
 
+    await clickText(yapper, /hint/);
+    await sleep(800);
+    await shot(yapper, `${vpName}-06b-yapper-hint`);
     await yapper.type("textarea", "the bright light that makes it daytime");
     await yapper.evaluate(() => (document.querySelector("form.type-row, form[data-role=yap]") as HTMLFormElement | null)?.requestSubmit());
     await sleep(5000);

@@ -32,7 +32,7 @@ export function App() {
   const [room, setRoom] = useState<string | null>(
     initialRoom.length === 4 ? initialRoom : null,
   );
-  const { state, youId, secret, guesses, debug, yapResult, toasts, connected, send } = useRoom(room, name);
+  const { state, youId, secret, guesses, debug, yapResult, hint, toasts, connected, send } = useRoom(room, name);
   const [helpOpen, setHelpOpen] = useState(false);
 
   const enterRoom = (code: string) => {
@@ -96,6 +96,7 @@ export function App() {
             secret={secret}
             guesses={guesses}
             yapResult={yapResult}
+            hint={hint}
             send={send}
             onHelp={() => setHelpOpen(true)}
           />

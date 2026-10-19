@@ -41,6 +41,13 @@ Your secret scene appears at the top. The words in red under **Don't say** are t
 | 🤔 Nothing drawn: too vague | Try saying what the thing *is* or *does*, one thing at a time. |
 | ⚠️ Couldn't reach the artist | A network hiccup. Say it again; nothing on the canvas changed. |
 
+### Stuck? Hint or skip
+
+- **💡 Hint** shows what the scene is (without the red words) and a few phrases the artist reliably understands. Tap a phrase to put it in the box. A hint costs your +1 for that round. Guessers can see that you used one, but never what it said.
+- **⏭ Skip scene** swaps in a new scene with a fresh canvas. You get one per game, and the timer keeps running.
+
+Every hint's phrases are tested: `eval/canvas-check.mts` says them through the real artist and checks that the canvas shows the scene.
+
 The artist knows five things: **cat, tree, house, sun, cloud**, in 11 colours (red, orange, yellow, green, blue, purple, pink, brown, black, white, gray).
 
 ## If you're guessing
@@ -51,7 +58,7 @@ Watch the picture build, then type a guess that names **every object and colour*
 
 | what happens | points |
 |---|---|
-| First correct guess | guesser +2, Yapper +1 |
+| First correct guess | guesser +2, Yapper +1 (0 if they used a hint) |
 | Yapper says a red word | everyone else +1 |
 | Time runs out | nobody scores |
 

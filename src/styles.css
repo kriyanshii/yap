@@ -1386,3 +1386,55 @@ input {
     height: auto;
   }
 }
+
+/* Hint and skip */
+.secret-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+.secret-actions .btn {
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 13px;
+}
+.secret-actions small { color: #444; }
+.hint-panel {
+  background: #fff;
+  border: 1px dashed #a37b00;
+  padding: 6px 8px;
+  font-size: 13px;
+}
+.hint-panel p { margin: 0 0 4px; }
+.hint-try { color: #444; }
+
+/* The canvas is a fixed square at every size (never cropped); if the cards grow (e.g. the hint panel), the page scrolls. */
+.desktop.screen-play,
+.desktop.screen-reveal {
+  height: auto;
+  min-height: 100dvh;
+  overflow-x: clip;
+  overflow-y: visible;
+}
+.play .paint-wrap,
+.reveal .paint-wrap,
+.play .paint-window,
+.reveal .paint-window,
+.play .workspace,
+.reveal .workspace {
+  flex: none;
+}
+.play .canvas-well,
+.reveal .canvas-well,
+.play .canvas-page,
+.reveal .canvas-page {
+  height: auto;
+}
+.play .canvas-stage,
+.reveal .canvas-stage {
+  height: auto;
+  width: min(100%, 360px);
+  max-height: none;
+  aspect-ratio: 1;
+}

@@ -33,6 +33,12 @@ export function HowToPlay({ onClose }: { onClose: () => void }) {
             <li><b>Hold the mic button and talk</b> (or type), check the words, then press <b>Draw</b>. A line under the box tells you what the artist did.</li>
           </ol>
 
+          <h3>💡 Stuck?</h3>
+          <ul>
+            <li><b>Hint:</b> shows what the scene is and phrases the artist understands. Tap a phrase to use it. It costs your +1 for that round.</li>
+            <li><b>Skip scene:</b> once per game, swap to a new scene with a fresh canvas. The timer keeps running.</li>
+          </ul>
+
           <h3>🔎 If you're guessing</h3>
           <ol>
             <li>Watch the picture build up.</li>
@@ -42,7 +48,7 @@ export function HowToPlay({ onClose }: { onClose: () => void }) {
 
           <h3>🏆 Scoring</h3>
           <ul>
-            <li>First correct guess: <b>+2</b> for the guesser, <b>+1</b> for the Yapper.</li>
+            <li>First correct guess: <b>+2</b> for the guesser, <b>+1</b> for the Yapper (0 if they used a hint).</li>
             <li>Yapper says a red word: <b>+1</b> for everyone else.</li>
             <li>5 rounds of 75 seconds. The Yapper changes every round.</li>
           </ul>

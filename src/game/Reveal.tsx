@@ -39,7 +39,7 @@ export function Reveal({ state, youId, guesses, isHost, onAgain }: Props) {
           <p className={`reason reason-${reveal?.reason ?? "none"}`}>{reasonLabel(reveal?.reason)}</p>
           <span className="reveal-label">The scene was</span>
           <h2 className="clue-reveal">{reveal?.clue ?? "???"}</h2>
-          <p className="points-line">{pointsLine(reveal?.reason, reveal?.winnerName ?? null)}</p>
+          <p className="points-line">{pointsLine(reveal?.reason, reveal?.winnerName ?? null, reveal?.hintUsed ?? false)}</p>
           <p className="roast">{reveal?.roast}</p>
           {reveal?.said ? (
             <p className="said-line">The Yapper said: {reveal.said}</p>
@@ -104,8 +104,8 @@ function reasonLabel(reason: string | undefined) {
   return "Reveal";
 }
 
-function pointsLine(reason: string | undefined, winner: string | null) {
-  if (reason === "guessed") return `${winner ?? "Someone"} +2 · Yapper +1`;
+function pointsLine(reason: string | undefined, winner: string | null, hintUsed: boolean) {
+  if (reason === "guessed") return `${winner ?? "Someone"} +2 · Yapper ${hintUsed ? "+0 (used a hint)" : "+1"}`;
   if (reason === "said_secret") return "Everyone else +1";
   if (reason === "timeout") return "No points this round";
   return "";

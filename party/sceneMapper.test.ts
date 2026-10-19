@@ -146,3 +146,16 @@ describe("demo scenes", () => {
     expect(sceneGuessMatches("a blue cat", blueCat.required!)).toBe(false);
   });
 });
+
+describe("demo scene hints", () => {
+  it("every scene has a hint: a one-line meaning and 2-4 phrases, none with a banned word", () => {
+    for (const s of DEMO_SCENES) {
+      expect(s.hint, s.id).toBeDefined();
+      expect(s.hint!.phrases.length, s.id).toBeGreaterThanOrEqual(2);
+      expect(s.hint!.phrases.length, s.id).toBeLessThanOrEqual(4);
+      for (const text of [s.hint!.meaning, ...s.hint!.phrases]) {
+        expect(hitsBanned(text, s.banned), `${s.id}: "${text}" uses a banned word`).toBe(false);
+      }
+    }
+  });
+});
