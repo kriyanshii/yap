@@ -2,6 +2,7 @@ import { Server, type Connection, type WSMessage } from "partyserver";
 import { SceneEngine, type Snapshot } from "../src/scene/engine.ts";
 import { DEMO_SCENES } from "./demoScenes";
 import { describeOps } from "./describe";
+import { sceneToDrawingOps } from "./sceneOps";
 import { fuzzyMatch, hitsBanned, sceneGuessMatches } from "./match";
 import { bestGuessStep, defaultChain, mapUtterance, readMapperEnv, warmUpQwen } from "./sceneMapper";
 import type {
@@ -257,19 +258,7 @@ export class YapServer extends Server<Env> {
 
   /** Publishes the engine's scene graph as stamps; objects changed since `before` animate, the rest appear instantly. */
   private repaint(before: Snapshot) {
-    const previous = new Map(before.objects.map((o) => [o.id, JSON.stringify(o)]));
-    const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
-    this.drawingOps = this.engine.state.objects.map((o) => ({
-      stamp: o.type,
-      color: o.color,
-      size: "medium",
-      count: 1,
-      x: clamp(o.x * 100, 5, 95),
-      y: clamp(o.y * 100, 8, 92),
-      scale: o.scale,
-      key: o.id,
-      fresh: previous.get(o.id) !== JSON.stringify(o),
-    }));
+    this.drawingOps = sceneToDrawingOps(this.engine.state.objects, before.objects);
     this.paintingGeneration += 1;
     this.paintStartedAt = Date.now() + PAINT_LEAD_MS;
     // A neutral placeholder, never the transcript: guessers must not receive what the yapper said.
