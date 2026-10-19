@@ -1,4 +1,4 @@
-// Gemini scene-mapper prompt and response schema, shared by the eval mapper (SDK, Node) and the game server (REST, PartyKit).
+// Gemini scene-mapper prompt and response schema, shared by the eval mapper (SDK, Node) and the game server (REST, Cloudflare Worker).
 // Kept free of SDK imports so it can be bundled anywhere.
 import { COLORS, RELATIONS, SPOTS, TYPES } from '../../src/scene/engine.ts';
 

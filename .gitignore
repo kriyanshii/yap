@@ -5,3 +5,5 @@ dist
 *.local
 .env
 __pycache__/
+.wrangler/
+.dev.vars

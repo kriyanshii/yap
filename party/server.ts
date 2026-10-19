@@ -1,4 +1,4 @@
-import type * as Party from "partykit/server";
+import { Server, type Connection, type WSMessage } from "partyserver";
 import { SceneEngine, type Snapshot } from "../src/scene/engine.ts";
 import { DEMO_SCENES } from "./demoScenes";
 import { fuzzyMatch, hitsBanned, sceneGuessMatches } from "./match";
@@ -48,8 +48,9 @@ function roastFor(
   return pick(name);
 }
 
-export default class YapServer implements Party.Server {
-  static options: Party.ServerOptions = { hibernate: false };
+// A room is a Durable Object (PartyServer). Hibernation stays off: game state and timers live in memory.
+export class YapServer extends Server<Env> {
+  static options = { hibernate: false };
 
   players = new Map<string, InternalPlayer>();
   joinOrder: string[] = [];
@@ -80,9 +81,7 @@ export default class YapServer implements Party.Server {
   private lastWarmAt = 0;
   private keepWarmTimer: ReturnType<typeof setInterval> | null = null;
 
-  constructor(readonly room: Party.Room) {}
-
-  onConnect(connection: Party.Connection) {
+  onConnect(connection: Connection) {
     const existing = this.players.get(connection.id);
     if (existing) {
       existing.connected = true;
@@ -97,7 +96,7 @@ export default class YapServer implements Party.Server {
     }
   }
 
-  onMessage(raw: string | ArrayBuffer, sender: Party.Connection) {
+  onMessage(sender: Connection, raw: WSMessage) {
     if (typeof raw !== "string") return;
     let msg: ClientMessage;
     try {
@@ -124,15 +123,15 @@ export default class YapServer implements Party.Server {
     }
   }
 
-  onClose(connection: Party.Connection) {
+  onClose(connection: Connection) {
     this.handleDisconnect(connection.id);
   }
 
-  onError(connection: Party.Connection) {
+  onError(connection: Connection) {
     this.handleDisconnect(connection.id);
   }
 
-  private handleJoin(sender: Party.Connection, rawName: string) {
+  private handleJoin(sender: Connection, rawName: string) {
     if (this.players.has(sender.id)) {
       this.send(sender, { type: "you", id: sender.id, isHost: this.hostId === sender.id });
       this.send(sender, { type: "state", state: this.publicState() });
@@ -162,7 +161,7 @@ export default class YapServer implements Party.Server {
     }
 
     this.send(sender, { type: "you", id: sender.id, isHost: this.hostId === sender.id });
-    this.broadcast({ type: "toast", text: `${name} crawled in.` });
+    this.broadcastMsg({ type: "toast", text: `${name} crawled in.` });
     this.broadcastState();
     // The lobby just opened: wake the GPU now so the first real utterance doesn't wait for a cold start.
     if (this.players.size === 1) {
@@ -171,7 +170,7 @@ export default class YapServer implements Party.Server {
     }
   }
 
-  private handleStart(sender: Party.Connection) {
+  private handleStart(sender: Connection) {
     if (sender.id !== this.hostId) {
       this.send(sender, { type: "toast", text: "That button is not for you." });
       return;
@@ -194,7 +193,7 @@ export default class YapServer implements Party.Server {
     this.beginRound();
   }
 
-  private handleUtterance(sender: Party.Connection, raw: string) {
+  private handleUtterance(sender: Connection, raw: string) {
     if (this.phase !== "playing" || this.roundClosed) return;
     if (sender.id !== this.yapperId) {
       this.send(sender, { type: "toast", text: "Mouths are for guessing." });
@@ -222,7 +221,7 @@ export default class YapServer implements Party.Server {
     const before = engine.snapshot();
     // Only the utterance and the scene graph go to the models. The secret scene never leaves the server.
     const input = { utterance: text, scene: { objects: before.objects }, focus_id: before.focus_id, history_len: engine.state.history.length };
-    const result = await mapUtterance(input, (ops) => engine.execute(ops), defaultChain(readMapperEnv(this.room.env)));
+    const result = await mapUtterance(input, (ops) => engine.execute(ops), defaultChain(readMapperEnv(this.secrets)));
     if (round !== this.round || engine !== this.engine) return;
 
     const winner = result.attempts[result.attempts.length - 1];
@@ -271,7 +270,7 @@ export default class YapServer implements Party.Server {
   }
 
   private async warmUp(reason: string) {
-    const env = readMapperEnv(this.room.env);
+    const env = readMapperEnv(this.secrets);
     if (!env.QWEN_ENDPOINT_URL || Date.now() - this.lastWarmAt < WARMUP_MIN_GAP_MS) return;
     this.lastWarmAt = Date.now();
     const ms = await warmUpQwen(env);
@@ -301,11 +300,16 @@ export default class YapServer implements Party.Server {
     if (!guessing) this.send(host, { type: "debug", entries: this.debugLog });
   }
 
-  private connectionFor(id: string | null): Party.Connection | undefined {
-    return id ? [...this.room.getConnections()].find((c) => c.id === id) : undefined;
+  /** Secrets set with `wrangler secret put` (or .env in local dev); not part of the generated Env type. */
+  private get secrets(): Record<string, unknown> {
+    return this.env as unknown as Record<string, unknown>;
   }
 
-  private handleGuess(sender: Party.Connection, raw: string) {
+  private connectionFor(id: string | null): Connection | undefined {
+    return id ? [...this.getConnections()].find((c) => c.id === id) : undefined;
+  }
+
+  private handleGuess(sender: Connection, raw: string) {
     if (this.phase !== "playing" || this.roundClosed) return;
     const player = this.players.get(sender.id);
     if (!player) return;
@@ -319,7 +323,7 @@ export default class YapServer implements Party.Server {
     const correct = !this.clue ? false
       : this.clue.required ? sceneGuessMatches(text, this.clue.required)
       : fuzzyMatch(text, this.clue.text);
-    this.broadcast({ type: "guess", name: player.name, text, correct });
+    this.broadcastMsg({ type: "guess", name: player.name, text, correct });
 
     if (correct) {
       this.endRound("guessed", player.id);
@@ -332,7 +336,7 @@ export default class YapServer implements Party.Server {
     if (connectedIds.length < 2) {
       this.phase = "lobby";
       this.stopTick();
-      this.broadcast({ type: "toast", text: "Everyone left. Cowards." });
+      this.broadcastMsg({ type: "toast", text: "Everyone left. Cowards." });
       this.broadcastState();
       return;
     }
@@ -363,7 +367,7 @@ export default class YapServer implements Party.Server {
     this.broadcastState();
     this.sendSecretToYapper();
     const yapper = this.yapperId ? this.players.get(this.yapperId) : null;
-    this.broadcast({
+    this.broadcastMsg({
       type: "toast",
       text: `Round ${this.round}. ${yapper?.name ?? "Someone"} has the secret.`,
     });
@@ -490,7 +494,7 @@ export default class YapServer implements Party.Server {
       this.roundClosed = true;
       this.stopTick();
       this.clearPaintTimer();
-      this.broadcast({ type: "toast", text: "Not enough people. Back to the sofa." });
+      this.broadcastMsg({ type: "toast", text: "Not enough people. Back to the sofa." });
     }
 
     this.broadcastState();
@@ -532,7 +536,7 @@ export default class YapServer implements Party.Server {
 
     return {
       phase: this.phase,
-      code: this.room.id.toUpperCase(),
+      code: this.name.toUpperCase(),
       round: this.round,
       totalRounds: TOTAL_ROUNDS,
       timeLeft: this.timeLeft,
@@ -550,16 +554,16 @@ export default class YapServer implements Party.Server {
   }
 
   private broadcastState() {
-    this.broadcast({ type: "state", state: this.publicState() });
+    this.broadcastMsg({ type: "state", state: this.publicState() });
   }
 
   private sendSecretToYapper() {
     if (!this.yapperId || !this.clue) return;
-    const conn = [...this.room.getConnections()].find((c) => c.id === this.yapperId);
+    const conn = [...this.getConnections()].find((c) => c.id === this.yapperId);
     if (conn) this.sendSecretIfYapper(conn);
   }
 
-  private sendSecretIfYapper(connection: Party.Connection) {
+  private sendSecretIfYapper(connection: Connection) {
     if (connection.id !== this.yapperId || !this.clue) return;
     if (this.phase !== "countdown" && this.phase !== "playing") return;
     this.send(connection, {
@@ -569,16 +573,15 @@ export default class YapServer implements Party.Server {
     });
   }
 
-  private send(connection: Party.Connection, msg: ServerMessage) {
+  private send(connection: Connection, msg: ServerMessage) {
     connection.send(JSON.stringify(msg));
   }
 
-  private broadcast(msg: ServerMessage) {
-    this.room.broadcast(JSON.stringify(msg));
+  private broadcastMsg(msg: ServerMessage) {
+    this.broadcast(JSON.stringify(msg));
   }
 }
 
-YapServer satisfies Party.Worker;
 
 function sanitizeName(raw: string): string {
   const cleaned = raw.replace(/\s+/g, " ").trim().slice(0, 18);

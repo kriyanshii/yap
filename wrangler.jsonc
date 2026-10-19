@@ -1,0 +1,20 @@
+// Yap on Cloudflare: one Worker serves the built frontend (dist/) and hosts game rooms as Durable Objects via PartyServer.
+// Replaces partykit.json (PartyKit's hosted platform stopped accepting deploys on 16 Oct 2026).
+// Secrets (QWEN_ENDPOINT_URL, MODAL_KEY, MODAL_SECRET, GEMINI_API_KEY) are set with `wrangler secret put`, never here.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "yap",
+  "main": "party/worker.ts",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  },
+  // Binding "Main" maps to the default party, so partysocket clients connect to /parties/main/<room>.
+  "durable_objects": {
+    "bindings": [{ "name": "Main", "class_name": "YapServer" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["YapServer"] }]
+}

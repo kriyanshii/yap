@@ -1,5 +1,6 @@
 // Fine-tuned Qwen2.5-1.5B + LoRA, served by train/modal_train.py (QwenMapper.generate) as a Modal web endpoint.
-// Used by the eval CLI (QwenMapper.fromEnv, reads .env) and by the game server (PartyKit, passes its env explicitly).
+// Used by the eval CLI (eval/run.ts, reads .env) and by the game server (Cloudflare Worker); both pass settings explicitly,
+// so this file has no Node or Workers dependencies.
 // The prompt comes from train/data/prompt.ts, the same one the training data uses.
 // Output guard (on by default): ops that fail the benchmark schema for this scene (unknown type, target id, relation,
 // color, spot, ...) reject the whole batch as [], the way the app would refuse to run them. `raw` keeps the model's own output.
@@ -31,16 +32,6 @@ export class QwenMapper implements SceneMapper {
   constructor(opts: QwenOptions) {
     if (!opts.url) throw new Error('QWEN_ENDPOINT_URL is not set (expected in .env; `modal deploy train/modal_train.py` prints it)');
     this.opts = { guard: true, timeoutMs: TIMEOUT_MS, ...opts };
-  }
-
-  /** Eval CLI: settings from the environment (.env is loaded by run.ts). QWEN_GUARD=0 turns the guard off. */
-  static fromEnv(): QwenMapper {
-    return new QwenMapper({
-      url: process.env.QWEN_ENDPOINT_URL ?? '',
-      key: process.env.MODAL_KEY,
-      secret: process.env.MODAL_SECRET,
-      guard: process.env.QWEN_GUARD !== '0',
-    });
   }
 
   async predict(input: MapperInput): Promise<MapperResult> {

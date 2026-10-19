@@ -1,13 +1,14 @@
-// Local end-to-end check of the game server (run `npx partykit dev` first): two players over WebSockets, one full round.
-// Usage: npx tsx party/e2e-local.mts [host]   (default 127.0.0.1:1999)
+// End-to-end check of the game server (locally: run `npm run dev` first): two players over WebSockets, two rounds.
+// Usage: npx tsx eval/e2e-game.mts [host] [ws|wss]   (default 127.0.0.1:1999 ws)
 // Checks: the secret goes only to the yapper; guessers never receive the transcript; the debug log reaches the host only
 // when the host isn't guessing; utterances change the canvas through the scene engine; a correct guess ends the round.
 const serverHost = process.argv[2] ?? "127.0.0.1:1999";
+const proto = process.argv[3] ?? (serverHost.startsWith("127.") || serverHost.startsWith("localhost") ? "ws" : "wss");
 const room = `E2E${Math.floor(Math.random() * 9000 + 1000)}`;
 type Msg = { type: string; [k: string]: any };
 
 function player(name: string) {
-  const ws = new WebSocket(`ws://${serverHost}/party/${room.toLowerCase()}?_pk=${name}-${Date.now()}`);
+  const ws = new WebSocket(`${proto}://${serverHost}/parties/main/${room.toLowerCase()}?_pk=${name}-${Date.now()}`);
   const inbox: Msg[] = [];
   ws.addEventListener("message", (e) => inbox.push(JSON.parse(String(e.data))));
   const ready = new Promise<void>((res) => ws.addEventListener("open", () => res()));

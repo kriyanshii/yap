@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k -n vite,party -c cyan,magenta \"vite\" \"partykit dev\"",
-    "build": "tsc --noEmit && vite build",
+    "dev": "concurrently -k -n vite,worker -c cyan,magenta \"vite\" \"npm run build:assets && wrangler dev --port 1999\"",
+    "build": "tsc --noEmit && tsc --noEmit -p party && vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "eval": "tsx eval/run.ts",
@@ -15,9 +15,14 @@
     "check:leakage": "tsx train/data/check-leakage.ts",
     "test:data": "tsx --test train/data/*.test.ts",
     "typecheck:data": "tsc -p train/data",
-    "e2e:local": "tsx party/e2e-local.mts"
+    "e2e:local": "tsx eval/e2e-game.mts",
+    "build:assets": "mkdir -p dist && [ -f dist/index.html ] || vite build",
+    "typecheck:party": "tsc --noEmit -p party",
+    "deploy": "npm run build && wrangler deploy",
+    "e2e:live": "tsx eval/e2e-game.mts yap.<your-subdomain>.workers.dev wss"
   },
   "dependencies": {
+    "partyserver": "^0.5.10",
     "partysocket": "^1.1.10",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
@@ -28,10 +33,10 @@
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^5.0.2",
     "concurrently": "^9.2.1",
-    "partykit": "^0.0.115",
     "tsx": "^4.23.15",
     "typescript": "^5.9.2",
     "vite": "^7.1.5",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "wrangler": "^4.151.2"
   }
 }

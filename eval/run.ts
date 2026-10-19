@@ -40,7 +40,13 @@ async function makeMapper(name: string): Promise<SceneMapper> {
     return new GeminiMapper();
   }
   const { QwenMapper } = await import('./mappers/qwen.ts');
-  return QwenMapper.fromEnv();
+  // QWEN_GUARD=0 scores the raw model output.
+  return new QwenMapper({
+    url: process.env.QWEN_ENDPOINT_URL ?? '',
+    key: process.env.MODAL_KEY,
+    secret: process.env.MODAL_SECRET,
+    guard: process.env.QWEN_GUARD !== '0',
+  });
 }
 
 const pct = (k: number, n: number) => (n ? `${Math.round((100 * k) / n)}%` : '-').padStart(5);
