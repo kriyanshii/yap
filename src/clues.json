@@ -1,0 +1,524 @@
+[
+  {
+    "id": "pineapple",
+    "text": "a pineapple",
+    "banned": ["pineapple", "ananas", "spiky fruit"],
+    "pack": "easy"
+  },
+  {
+    "id": "lighthouse",
+    "text": "a lighthouse",
+    "banned": ["lighthouse", "beacon", "beacon tower"],
+    "pack": "easy"
+  },
+  {
+    "id": "umbrella",
+    "text": "an umbrella",
+    "banned": ["umbrella", "brolly", "parasol"],
+    "pack": "easy"
+  },
+  {
+    "id": "rickshaw",
+    "text": "a rickshaw",
+    "banned": ["rickshaw", "ricksha", "pedicab"],
+    "pack": "easy"
+  },
+  {
+    "id": "samosa",
+    "text": "a samosa",
+    "banned": ["samosa", "samosas"],
+    "pack": "easy"
+  },
+  {
+    "id": "cactus",
+    "text": "a cactus",
+    "banned": ["cactus", "cacti", "succulent"],
+    "pack": "easy"
+  },
+  {
+    "id": "teapot",
+    "text": "a teapot",
+    "banned": ["teapot", "kettle"],
+    "pack": "easy"
+  },
+  {
+    "id": "trombone",
+    "text": "a trombone",
+    "banned": ["trombone", "brass"],
+    "pack": "easy"
+  },
+  {
+    "id": "snowman",
+    "text": "a snowman",
+    "banned": ["snowman", "snowmen", "frosty"],
+    "pack": "easy"
+  },
+  {
+    "id": "backpack",
+    "text": "a backpack",
+    "banned": ["backpack", "rucksack", "knapsack"],
+    "pack": "easy"
+  },
+  {
+    "id": "flamingo",
+    "text": "a flamingo",
+    "banned": ["flamingo", "pink bird"],
+    "pack": "easy"
+  },
+  {
+    "id": "submarine",
+    "text": "a submarine",
+    "banned": ["submarine", "sub", "u-boat", "uboat"],
+    "pack": "easy"
+  },
+  {
+    "id": "windmill",
+    "text": "a windmill",
+    "banned": ["windmill", "turbine"],
+    "pack": "easy"
+  },
+  {
+    "id": "penguin",
+    "text": "a penguin",
+    "banned": ["penguin", "penguins"],
+    "pack": "easy"
+  },
+  {
+    "id": "hammock",
+    "text": "a hammock",
+    "banned": ["hammock"],
+    "pack": "easy"
+  },
+  {
+    "id": "volcano",
+    "text": "a volcano",
+    "banned": ["volcano", "eruption", "lava"],
+    "pack": "easy"
+  },
+  {
+    "id": "seahorse",
+    "text": "a seahorse",
+    "banned": ["seahorse", "sea horse"],
+    "pack": "easy"
+  },
+  {
+    "id": "igloo",
+    "text": "an igloo",
+    "banned": ["igloo", "ice house"],
+    "pack": "easy"
+  },
+  {
+    "id": "sunflower",
+    "text": "a sunflower",
+    "banned": ["sunflower"],
+    "pack": "easy"
+  },
+  {
+    "id": "helicopter",
+    "text": "a helicopter",
+    "banned": ["helicopter", "chopper", "heli"],
+    "pack": "easy"
+  },
+  {
+    "id": "mushroom",
+    "text": "a mushroom",
+    "banned": ["mushroom", "toadstool", "fungus"],
+    "pack": "easy"
+  },
+  {
+    "id": "giraffe",
+    "text": "a giraffe",
+    "banned": ["giraffe"],
+    "pack": "easy"
+  },
+  {
+    "id": "typewriter",
+    "text": "a typewriter",
+    "banned": ["typewriter"],
+    "pack": "easy"
+  },
+  {
+    "id": "watermelon",
+    "text": "a watermelon",
+    "banned": ["watermelon", "melon"],
+    "pack": "easy"
+  },
+  {
+    "id": "octopus",
+    "text": "an octopus",
+    "banned": ["octopus", "octopi", "octopuses"],
+    "pack": "easy"
+  },
+  {
+    "id": "cat-scooter",
+    "text": "a cat riding a scooter",
+    "banned": ["cat", "kitten", "feline", "scooter", "moped", "vespa"],
+    "pack": "weird"
+  },
+  {
+    "id": "eiffel-cake",
+    "text": "Eiffel Tower made of cake",
+    "banned": ["eiffel", "tower", "cake", "paris"],
+    "pack": "weird"
+  },
+  {
+    "id": "wizard-metro",
+    "text": "a wizard on the metro",
+    "banned": ["wizard", "mage", "sorcerer", "metro", "subway", "underground"],
+    "pack": "weird"
+  },
+  {
+    "id": "cow-laptop",
+    "text": "a cow using a laptop",
+    "banned": ["cow", "cattle", "laptop", "computer", "notebook"],
+    "pack": "weird"
+  },
+  {
+    "id": "dino-coffee",
+    "text": "a dinosaur at a coffee shop",
+    "banned": ["dinosaur", "dino", "t-rex", "trex", "coffee", "cafe", "cappuccino"],
+    "pack": "weird"
+  },
+  {
+    "id": "robot-dog",
+    "text": "a robot walking a dog",
+    "banned": ["robot", "android", "dog", "puppy", "leash"],
+    "pack": "weird"
+  },
+  {
+    "id": "mermaid-traffic",
+    "text": "a mermaid stuck in traffic",
+    "banned": ["mermaid", "siren", "traffic", "jam", "cars"],
+    "pack": "weird"
+  },
+  {
+    "id": "ghost-groceries",
+    "text": "a ghost buying groceries",
+    "banned": ["ghost", "spirit", "grocery", "groceries", "supermarket"],
+    "pack": "weird"
+  },
+  {
+    "id": "dragon-laundry",
+    "text": "a dragon doing laundry",
+    "banned": ["dragon", "laundry", "washing", "washer"],
+    "pack": "weird"
+  },
+  {
+    "id": "pirate-plane",
+    "text": "a pirate on an airplane",
+    "banned": ["pirate", "airplane", "plane", "aircraft", "flight"],
+    "pack": "weird"
+  },
+  {
+    "id": "frog-orchestra",
+    "text": "a frog conducting an orchestra",
+    "banned": ["frog", "toad", "orchestra", "conductor", "symphony"],
+    "pack": "weird"
+  },
+  {
+    "id": "penguin-suit",
+    "text": "a penguin in a three-piece suit",
+    "banned": ["penguin", "suit", "tuxedo", "tie"],
+    "pack": "weird"
+  },
+  {
+    "id": "snail-cheetah",
+    "text": "a snail racing a cheetah",
+    "banned": ["snail", "cheetah", "race", "racing"],
+    "pack": "weird"
+  },
+  {
+    "id": "cactus-shades",
+    "text": "a cactus wearing sunglasses",
+    "banned": ["cactus", "sunglasses", "shades", "glasses"],
+    "pack": "weird"
+  },
+  {
+    "id": "shark-bike",
+    "text": "a shark riding a bicycle",
+    "banned": ["shark", "bicycle", "bike", "cycle"],
+    "pack": "weird"
+  },
+  {
+    "id": "moon-noodles",
+    "text": "the moon eating noodles",
+    "banned": ["moon", "noodle", "noodles", "ramen", "pasta"],
+    "pack": "weird"
+  },
+  {
+    "id": "knight-skateboard",
+    "text": "a knight on a skateboard",
+    "banned": ["knight", "armor", "armour", "skateboard", "skate"],
+    "pack": "weird"
+  },
+  {
+    "id": "flying-toaster",
+    "text": "a toaster with wings flying",
+    "banned": ["toaster", "toast", "wings", "flying"],
+    "pack": "weird"
+  },
+  {
+    "id": "whale-pool",
+    "text": "a whale in a swimming pool",
+    "banned": ["whale", "pool", "swimming"],
+    "pack": "weird"
+  },
+  {
+    "id": "raccoon-chef",
+    "text": "a raccoon chef in a kitchen",
+    "banned": ["raccoon", "chef", "cook", "kitchen"],
+    "pack": "weird"
+  },
+  {
+    "id": "banana-throne",
+    "text": "a banana sitting on a throne",
+    "banned": ["banana", "throne", "king", "crown"],
+    "pack": "weird"
+  },
+  {
+    "id": "octopus-drums",
+    "text": "an octopus playing drums",
+    "banned": ["octopus", "drum", "drums", "drumkit"],
+    "pack": "weird"
+  },
+  {
+    "id": "sloth-skydive",
+    "text": "a sloth skydiving",
+    "banned": ["sloth", "skydive", "skydiving", "parachute"],
+    "pack": "weird"
+  },
+  {
+    "id": "chicken-taxi",
+    "text": "a chicken driving a taxi",
+    "banned": ["chicken", "hen", "taxi", "cab"],
+    "pack": "weird"
+  },
+  {
+    "id": "vampire-beach",
+    "text": "a vampire at the beach",
+    "banned": ["vampire", "dracula", "beach", "sunbathe"],
+    "pack": "weird"
+  },
+  {
+    "id": "yeti-icecream",
+    "text": "a yeti licking ice cream",
+    "banned": ["yeti", "abominable", "ice cream", "icecream", "cone"],
+    "pack": "weird"
+  },
+  {
+    "id": "goldfish-tightrope",
+    "text": "a goldfish walking a tightrope",
+    "banned": ["goldfish", "fish", "tightrope", "rope"],
+    "pack": "weird"
+  },
+  {
+    "id": "sandwich-speech",
+    "text": "a sandwich giving a speech",
+    "banned": ["sandwich", "speech", "microphone", "podium"],
+    "pack": "weird"
+  },
+  {
+    "id": "llama-elevator",
+    "text": "a llama in an elevator",
+    "banned": ["llama", "alpaca", "elevator", "lift"],
+    "pack": "weird"
+  },
+  {
+    "id": "spider-knit",
+    "text": "a spider knitting a sweater",
+    "banned": ["spider", "knit", "knitting", "sweater", "wool"],
+    "pack": "weird"
+  },
+  {
+    "id": "trex-chopsticks",
+    "text": "a T-rex trying to use chopsticks",
+    "banned": ["t-rex", "trex", "dinosaur", "chopsticks"],
+    "pack": "weird"
+  },
+  {
+    "id": "cloud-jogging",
+    "text": "a cloud with shoes jogging",
+    "banned": ["cloud", "jog", "jogging", "running", "sneakers"],
+    "pack": "weird"
+  },
+  {
+    "id": "statue-pizza",
+    "text": "a statue eating pizza",
+    "banned": ["statue", "pizza", "slice"],
+    "pack": "weird"
+  },
+  {
+    "id": "microwave-marathon",
+    "text": "a microwave running a marathon",
+    "banned": ["microwave", "marathon", "running"],
+    "pack": "weird"
+  },
+  {
+    "id": "flamingo-rave",
+    "text": "a flamingo at a rave",
+    "banned": ["flamingo", "rave", "disco", "nightclub"],
+    "pack": "weird"
+  },
+  {
+    "id": "book-legs",
+    "text": "a book with legs chasing someone",
+    "banned": ["book", "legs", "chase", "chasing"],
+    "pack": "weird"
+  },
+  {
+    "id": "snail-crane",
+    "text": "a snail operating a crane",
+    "banned": ["snail", "crane", "construction"],
+    "pack": "weird"
+  },
+  {
+    "id": "hamster-dj",
+    "text": "a hamster as a DJ",
+    "banned": ["hamster", "dj", "turntable", "decks"],
+    "pack": "weird"
+  },
+  {
+    "id": "giraffe-tiny-car",
+    "text": "a giraffe in a tiny car",
+    "banned": ["giraffe", "car", "tiny", "small car"],
+    "pack": "weird"
+  },
+  {
+    "id": "astronaut-cow",
+    "text": "an astronaut milking a cow",
+    "banned": ["astronaut", "space", "milking", "cow"],
+    "pack": "weird"
+  },
+  {
+    "id": "potato-passport",
+    "text": "a potato holding a passport",
+    "banned": ["potato", "passport", "airport"],
+    "pack": "weird"
+  },
+  {
+    "id": "owl-dentist",
+    "text": "an owl at the dentist",
+    "banned": ["owl", "dentist", "teeth", "toothbrush"],
+    "pack": "weird"
+  },
+  {
+    "id": "cactus-umbrella",
+    "text": "a cactus holding an umbrella in the rain",
+    "banned": ["cactus", "umbrella", "rain"],
+    "pack": "weird"
+  },
+  {
+    "id": "crab-camera",
+    "text": "a crab taking a selfie",
+    "banned": ["crab", "selfie", "camera", "phone"],
+    "pack": "weird"
+  },
+  {
+    "id": "bear-ballet",
+    "text": "a bear doing ballet",
+    "banned": ["bear", "ballet", "tutu", "dancer"],
+    "pack": "weird"
+  },
+  {
+    "id": "cricket-match",
+    "text": "a cricket match",
+    "banned": ["cricket", "batsman", "wicket", "bowler", "stadium"],
+    "pack": "culture"
+  },
+  {
+    "id": "diwali-lamps",
+    "text": "Diwali lamps",
+    "banned": ["diwali", "diya", "diyas", "lamp", "lamps", "rangoli"],
+    "pack": "culture"
+  },
+  {
+    "id": "yellow-taxi",
+    "text": "a yellow taxi",
+    "banned": ["taxi", "cab", "yellow cab", "nyc"],
+    "pack": "culture"
+  },
+  {
+    "id": "biryani",
+    "text": "a plate of biryani",
+    "banned": ["biryani", "biriyani", "rice"],
+    "pack": "culture"
+  },
+  {
+    "id": "holi-fight",
+    "text": "a Holi color fight",
+    "banned": ["holi", "color", "colour", "gulal", "powder"],
+    "pack": "culture"
+  },
+  {
+    "id": "auto-rain",
+    "text": "an auto rickshaw in the rain",
+    "banned": ["auto", "rickshaw", "tuk", "rain"],
+    "pack": "culture"
+  },
+  {
+    "id": "chai-stall",
+    "text": "a chai stall",
+    "banned": ["chai", "tea", "stall", "vendor"],
+    "pack": "culture"
+  },
+  {
+    "id": "bollywood-dance",
+    "text": "a Bollywood dance",
+    "banned": ["bollywood", "dance", "dancing"],
+    "pack": "culture"
+  },
+  {
+    "id": "liberty",
+    "text": "the Statue of Liberty",
+    "banned": ["liberty", "statue", "new york"],
+    "pack": "culture"
+  },
+  {
+    "id": "sushi-belt",
+    "text": "a sushi conveyor belt",
+    "banned": ["sushi", "conveyor", "sashimi"],
+    "pack": "culture"
+  },
+  {
+    "id": "rio-carnival",
+    "text": "Carnival in Rio",
+    "banned": ["carnival", "rio", "samba", "float"],
+    "pack": "culture"
+  },
+  {
+    "id": "bagpipes",
+    "text": "bagpipes on a hill",
+    "banned": ["bagpipe", "bagpipes", "highland", "kilt"],
+    "pack": "culture"
+  },
+  {
+    "id": "ramen",
+    "text": "a steaming bowl of ramen",
+    "banned": ["ramen", "noodle", "noodles", "broth"],
+    "pack": "culture"
+  },
+  {
+    "id": "henna",
+    "text": "henna on hands",
+    "banned": ["henna", "mehndi", "mehendi"],
+    "pack": "culture"
+  },
+  {
+    "id": "street-dosa",
+    "text": "a street dosa",
+    "banned": ["dosa", "dosai", "tawa"],
+    "pack": "culture"
+  },
+  {
+    "id": "ganesh",
+    "text": "a Ganesh procession",
+    "banned": ["ganesh", "ganpati", "visarjan", "procession"],
+    "pack": "culture"
+  },
+  {
+    "id": "dumplings",
+    "text": "a basket of dumplings",
+    "banned": ["dumpling", "dumplings", "momos", "bao"],
+    "pack": "culture"
+  }
+]

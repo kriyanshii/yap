@@ -1,0 +1,36 @@
+{
+  "name": "yap",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k -n vite,party -c cyan,magenta \"vite\" \"partykit dev\"",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "eval": "tsx eval/run.ts",
+    "test:eval": "tsx --test eval/*.test.ts",
+    "typecheck:eval": "tsc -p eval",
+    "gen:data": "tsx train/data/generate.ts",
+    "check:leakage": "tsx train/data/check-leakage.ts",
+    "test:data": "tsx --test train/data/*.test.ts",
+    "typecheck:data": "tsc -p train/data"
+  },
+  "dependencies": {
+    "partysocket": "^1.1.10",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@google/genai": "^2.30.0",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^5.0.2",
+    "concurrently": "^9.2.1",
+    "partykit": "^0.0.115",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.5",
+    "vitest": "^4.1.11"
+  }
+}
