@@ -2,7 +2,7 @@ import { Server, type Connection, type WSMessage } from "partyserver";
 import { SceneEngine, type Snapshot } from "../src/scene/engine.ts";
 import { DEMO_SCENES } from "./demoScenes";
 import { fuzzyMatch, hitsBanned, sceneGuessMatches } from "./match";
-import { defaultChain, mapUtterance, readMapperEnv, warmUpQwen } from "./sceneMapper";
+import { bestGuessStep, defaultChain, mapUtterance, readMapperEnv, warmUpQwen } from "./sceneMapper";
 import type {
   Clue,
   ClientMessage,
@@ -221,7 +221,8 @@ export class YapServer extends Server<Env> {
     const before = engine.snapshot();
     // Only the utterance and the scene graph go to the models. The secret scene never leaves the server.
     const input = { utterance: text, scene: { objects: before.objects }, focus_id: before.focus_id, history_len: engine.state.history.length };
-    const result = await mapUtterance(input, (ops) => engine.execute(ops), defaultChain(readMapperEnv(this.secrets)));
+    const env = readMapperEnv(this.secrets);
+    const result = await mapUtterance(input, (ops) => engine.execute(ops), defaultChain(env), bestGuessStep(env));
     if (round !== this.round || engine !== this.engine) return;
 
     const winner = result.attempts[result.attempts.length - 1];
@@ -241,9 +242,10 @@ export class YapServer extends Server<Env> {
       return;
     }
     if (result.ops.length === 0) {
-      if (yapper) this.send(yapper, { type: "toast", text: "The intern heard you but drew nothing." });
+      if (yapper) this.send(yapper, { type: "toast", text: "Too vague, nothing drawn. One thing at a time: say what it is or does, then use \"it\" to change it." });
       return;
     }
+    if (result.mapper === "best_guess" && yapper) this.send(yapper, { type: "toast", text: "The intern took a guess." });
     this.repaint(before);
   }
 

@@ -148,7 +148,7 @@ export type Clue = {
 export type DebugEntry = {
   round: number;
   utterance: string;
-  mapper: "qwen" | "gemini" | "keyword" | null;
+  mapper: "qwen" | "gemini" | "keyword" | "best_guess" | null;
   ms: number;
   attempts: { mapper: string; outcome: string; ms: number }[];
   raw: string;

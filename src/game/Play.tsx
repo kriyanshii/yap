@@ -114,6 +114,9 @@ export function Play({ state, youId, secret, guesses, send }: Props) {
 
       {isYapper && (
         <div className="dock yapper-dock">
+          <p className="yap-hint">
+            One thing at a time. Say what it is or does ("the bright light of daytime"), then change it with "it" ("make it orange").
+          </p>
           {supported ? (
             <button
               type="button"

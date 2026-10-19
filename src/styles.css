@@ -1015,3 +1015,11 @@ input {
 @media (max-width: 900px) {
   .debug-panel { position: static; width: auto; max-height: 40vh; margin: 8px; }
 }
+
+.yap-hint {
+  flex-basis: 100%;
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: #333;
+}
+.debug-best_guess .debug-mapper { color: #7a3fb0; }

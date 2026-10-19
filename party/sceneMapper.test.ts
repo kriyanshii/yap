@@ -77,6 +77,44 @@ describe("mapUtterance fallback chain", () => {
   });
 });
 
+describe("best guess after a refusal", () => {
+  const guess = (r: Step, calls: string[] = []) => ({
+    name: "best_guess" as const, configured: true,
+    predict: async () => { calls.push("guess"); return r === "throw-timeout" ? { raw: "error: timeout after 8000 ms", ops: null } : r; },
+  });
+  const orangeSun = [{ op: "add" as const, type: "sun" as const, color: "orange" as const }];
+
+  it("draws the guess when the model refused a loose description", async () => {
+    const engine = new SceneEngine();
+    const r = await mapUtterance(input(engine, "an orange round thing"), (ops) => engine.execute(ops),
+      chain({ qwen: { raw: "[]", ops: [] } }), guess({ raw: "", ops: orangeSun }));
+    expect(r.mapper).toBe("best_guess");
+    expect(r.attempts.map((a) => `${a.mapper}:${a.outcome}`)).toEqual(["qwen:ok", "best_guess:ok"]);
+    expect(engine.state.objects.map((o) => `${o.type}:${o.color}`)).toEqual(["sun:orange"]);
+    expect(engine.state.history).toHaveLength(1);
+  });
+
+  it("is never called when the model already drew something", async () => {
+    const engine = new SceneEngine();
+    const calls: string[] = [];
+    const r = await mapUtterance(input(engine), (ops) => engine.execute(ops), chain({ qwen: { raw: "", ops: cat } }), guess({ raw: "", ops: orangeSun }, calls));
+    expect(r.mapper).toBe("qwen");
+    expect(calls).toEqual([]);
+  });
+
+  it("keeps the refusal when the guess is [] (chatter), times out, or suggests anything but adds", async () => {
+    for (const g of [{ raw: "[]", ops: [] }, "throw-timeout", { raw: '[{"op":"clear"}]', ops: [], guardRejected: true }] as Step[]) {
+      const engine = new SceneEngine();
+      engine.execute([{ op: "add", type: "tree" }]);
+      const before = engine.snapshot();
+      const r = await mapUtterance(input(engine, "this game is hard lol"), (ops) => engine.execute(ops), chain({ qwen: { raw: "[]", ops: [] } }), guess(g));
+      expect(r.mapper).toBe("qwen");
+      expect(r.ops).toEqual([]);
+      expect(engine.snapshot()).toEqual(before);
+    }
+  });
+});
+
 describe("demo scenes", () => {
   const otherStamps = DRAWING_STAMPS.filter((s) => !(TYPES as readonly string[]).includes(s));
 

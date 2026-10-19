@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { DebugEntry } from "../../party/types";
 
-const MAPPER_LABEL: Record<string, string> = { qwen: "Qwen 1.5B", gemini: "Gemini", keyword: "keyword" };
+const MAPPER_LABEL: Record<string, string> = { qwen: "Qwen 1.5B", gemini: "Gemini", keyword: "keyword", best_guess: "best guess (Gemini)" };
 
 /** Host-only: which mapper answered each utterance, how fast, and the ops it produced. Rendered only when the host isn't guessing. */
 export function DebugPanel({ entries }: { entries: DebugEntry[] }) {
