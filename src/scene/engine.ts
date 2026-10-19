@@ -23,6 +23,8 @@ export const DEFAULTS:Record<ObjectType,Color>={cat:'gray',tree:'green',house:'b
 const SPOT_COORDS:Record<Spot,[number,number]>={left:[.2,.5],right:[.8,.5],center:[.5,.5],top:[.5,.2],bottom:[.5,.8],'top-left':[.2,.2],'top-right':[.8,.2],'bottom-left':[.2,.8],'bottom-right':[.8,.8]};
 const OFFSETS:Record<Relation,[number,number]>={left_of:[-.2,0],right_of:[.2,0],above:[0,-.2],below:[0,.2],on:[0,-.14],near:[.13,.1]};
 const clamp=(v:number,lo:number,hi:number)=>Math.min(hi,Math.max(lo,v));
+/** Minimum spacing between objects, and the step used to move a placement off an occupied spot. */
+const SPREAD=.12;
 const own=(o:object,k:string)=>Object.prototype.hasOwnProperty.call(o,k);
 const isObj=(v:unknown):v is Record<string,unknown> => !!v && typeof v==='object' && !Array.isArray(v);
 const keys=(v:Record<string,unknown>,required:string[],optional:string[]=[])=>required.every(k=>own(v,k)) && Object.keys(v).every(k=>required.includes(k)||optional.includes(k));
@@ -71,15 +73,22 @@ export class SceneEngine {
     if(selected)return selected;
     throw Error('Ambiguous or missing type reference');
   }
-  private position(pos:Pos|undefined,objects:SceneObject[],focus:string|null,added:Map<number,string>,slotCount:Map<string,number>):[number,number]{
-    if(!pos||typeof pos==='string'){
-      const spot=pos||'center';const [baseX,y]=SPOT_COORDS[spot];
-      const n=slotCount.get(spot)||0;slotCount.set(spot,n+1);
-      const shift=n===0?0:(n%2===1?-1:1)*Math.ceil(n/2)*.12;
-      return [clamp(baseX+shift,.08,.92),y];
+  /**
+   * Where a placement lands. If another object already sits there, the same 0.12 steps used for repeated spots
+   * (left, right, further left, ...) are tried until the spot is free, so objects never stack invisibly.
+   * Allowed to overlap: the relation's reference ("a cat on the house") and `ignore` (the object being moved).
+   */
+  private position(pos:Pos|undefined,objects:SceneObject[],focus:string|null,added:Map<number,string>,ignore:string[]=[]):[number,number]{
+    const skip=new Set(ignore);let base:[number,number];
+    if(!pos||typeof pos==='string')base=SPOT_COORDS[pos||'center'];
+    else{const target=this.resolve(pos.ref,objects,focus,added);skip.add(target.id);const [dx,dy]=OFFSETS[pos.relation];base=[target.x+dx,target.y+dy]}
+    const free=(x:number,y:number)=>objects.every(o=>skip.has(o.id)||Math.abs(o.x-x)>=SPREAD||Math.abs(o.y-y)>=SPREAD);
+    for(let n=0;n<=8;n++){
+      const shift=n===0?0:(n%2===1?-1:1)*Math.ceil(n/2)*SPREAD;
+      const x=clamp(base[0]+shift,.08,.92),y=clamp(base[1],.08,.92);
+      if(free(x,y))return [x,y];
     }
-    const target=this.resolve(pos.ref,objects,focus,added);
-    const [dx,dy]=OFFSETS[pos.relation];return [clamp(target.x+dx,.08,.92),clamp(target.y+dy,.08,.92)];
+    return [clamp(base[0],.08,.92),clamp(base[1],.08,.92)];
   }
   /** Returns false on invalid batch, leaving all state unchanged. Empty [] is a successful no-op. */
   execute(candidate:unknown):boolean {
@@ -95,19 +104,18 @@ export class SceneEngine {
     let focus=this.state.focus_id;
     const added=new Map<number,string>();
     const counters={...this.counters};
-    const slots=new Map<string,number>();
     try {
       for(let i=0;i<ops.length;i++){
         const op=ops[i];
         switch(op.op){
           case 'add':{
-            const [x,y]=this.position(op.at,objects,focus,added,slots);
+            const [x,y]=this.position(op.at,objects,focus,added);
             const id=`${op.type}_${++counters[op.type]}`;
             objects.push({id,type:op.type,color:op.color||DEFAULTS[op.type],x,y,scale:op.scale??1});
             added.set(i,id);focus=id;break;
           }
           case 'recolor':{const o=this.resolve(op.target,objects,focus,added);o.color=op.color;focus=o.id;break}
-          case 'move':{const o=this.resolve(op.target,objects,focus,added);const [x,y]=this.position(op.to,objects,focus,added,slots);o.x=x;o.y=y;focus=o.id;break}
+          case 'move':{const o=this.resolve(op.target,objects,focus,added);const [x,y]=this.position(op.to,objects,focus,added,[o.id]);o.x=x;o.y=y;focus=o.id;break}
           case 'scale':{const o=this.resolve(op.target,objects,focus,added);o.scale=clamp(o.scale*op.factor,.3,2);focus=o.id;break}
           case 'delete':{const o=this.resolve(op.target,objects,focus,added);objects.splice(objects.findIndex(v=>v.id===o.id),1);focus=null;break}
           case 'clear':objects.length=0;focus=null;break;

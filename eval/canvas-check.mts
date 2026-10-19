@@ -77,6 +77,11 @@ function check(objects: SceneObject[], e: Expect): string[] {
     const ok = (a: SceneObject) => bs.some((b) => b !== a && holds(rel, a, b));
     if (mode === "all" ? !as.every(ok) : !as.some(ok)) problems.push(`${ta} isn't ${rel.replace("_", " ")} the ${tb}`);
   }
+  // Objects drawn almost on top of each other hide one another, so a guesser can't see the scene.
+  for (let i = 0; i < objects.length; i++) for (let j = i + 1; j < objects.length; j++) {
+    const [a, b] = [objects[i], objects[j]];
+    if (Math.abs(a.x - b.x) < 0.08 && Math.abs(a.y - b.y) < 0.08) problems.push(`${a.type} and ${b.type} are drawn on top of each other`);
+  }
   for (const [t, spot] of e.spots ?? []) {
     const ok = of(t).some((o) => (spot === "left" ? o.x < 0.4 : spot === "right" ? o.x > 0.6 : o.y < 0.35));
     if (of(t).length && !ok) problems.push(`${t} isn't at the ${spot}`);

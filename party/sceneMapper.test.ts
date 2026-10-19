@@ -159,3 +159,29 @@ describe("demo scene hints", () => {
     }
   });
 });
+
+describe("scene layout", () => {
+  const near = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.abs(a.x - b.x) < 0.12 && Math.abs(a.y - b.y) < 0.12;
+  it("never stacks objects on the same spot across utterances", () => {
+    const engine = new SceneEngine();
+    engine.execute([{ op: "add", type: "house" }]);
+    engine.execute([{ op: "add", type: "sun" }]);                                   // no position: must not hide behind the house
+    engine.execute([{ op: "add", type: "cat", at: { relation: "on", ref: "house_1" } }, { op: "add", type: "cat", at: { relation: "on", ref: "house_1" } }]);
+    const objs = engine.state.objects;
+    for (let i = 0; i < objs.length; i++) for (let j = i + 1; j < objs.length; j++) {
+      const [a, b] = [objs[i], objs[j]];
+      const onPair = (a.type === "cat" && b.type === "house") || (a.type === "house" && b.type === "cat");
+      if (!onPair) expect(near(a, b), `${a.id} and ${b.id} overlap`).toBe(false);
+    }
+    const [cat1, cat2] = objs.filter((o) => o.type === "cat");
+    expect(cat1.y).toBe(cat2.y);                                                      // both still on the roof, side by side
+  });
+
+  it("keeps the old spread for repeats in one batch and leaves single placements alone", () => {
+    const engine = new SceneEngine();
+    engine.execute([{ op: "add", type: "tree" }, { op: "add", type: "tree" }, { op: "add", type: "tree" }]);
+    expect(engine.state.objects.map((o) => o.x)).toEqual([0.5, 0.38, 0.62]);
+    engine.execute([{ op: "move", target: "tree_1", to: "center" }]);              // moving onto its own spot stays put
+    expect(engine.state.objects[0].x).toBe(0.5);
+  });
+});
