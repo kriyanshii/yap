@@ -19,7 +19,7 @@
     "build:assets": "mkdir -p dist && [ -f dist/index.html ] || vite build",
     "typecheck:party": "tsc --noEmit -p party",
     "deploy": "npm run build && wrangler deploy",
-    "e2e:live": "tsx eval/e2e-game.mts yap.<your-subdomain>.workers.dev wss"
+    "e2e:live": "tsx eval/e2e-game.mts yap.kriyanshishah06.workers.dev wss"
   },
   "dependencies": {
     "partyserver": "^0.5.10",
