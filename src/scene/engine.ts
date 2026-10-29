@@ -23,8 +23,17 @@ export const DEFAULTS:Record<ObjectType,Color>={cat:'gray',tree:'green',house:'b
 const SPOT_COORDS:Record<Spot,[number,number]>={left:[.2,.5],right:[.8,.5],center:[.5,.5],top:[.5,.2],bottom:[.5,.8],'top-left':[.2,.2],'top-right':[.8,.2],'bottom-left':[.2,.8],'bottom-right':[.8,.8]};
 const OFFSETS:Record<Relation,[number,number]>={left_of:[-.2,0],right_of:[.2,0],above:[0,-.2],below:[0,.2],on:[0,-.14],near:[.13,.1]};
 const clamp=(v:number,lo:number,hi:number)=>Math.min(hi,Math.max(lo,v));
-/** Minimum spacing between objects, and the step used to move a placement off an occupied spot. */
-const SPREAD=.12;
+/** Step used to walk a placement off an occupied spot. Fine enough to sit just clear of a stamp. */
+const SPREAD=.02;
+/** Half-width and half-height at scale 1, measured from the stamp drawings. A cat is drawn smaller than the others. */
+const EXTENT:Record<ObjectType,[number,number]>={cat:[.099,.112],tree:[.112,.167],house:[.140,.183],sun:[.106,.106],cloud:[.135,.068]};
+/** How far a thing "on" another may slide sideways and still read as on the roof. */
+const ON_REACH=.15;
+const halves=(type:ObjectType,scale:number):[number,number]=>{const [w,h]=EXTENT[type];return [w*scale,h*scale]};
+const boxesOverlap=(x:number,y:number,hw:number,hh:number,o:SceneObject)=>{
+  const [ow,oh]=halves(o.type,o.scale);
+  return Math.abs(x-o.x)<hw+ow && Math.abs(y-o.y)<hh+oh;
+};
 const own=(o:object,k:string)=>Object.prototype.hasOwnProperty.call(o,k);
 const isObj=(v:unknown):v is Record<string,unknown> => !!v && typeof v==='object' && !Array.isArray(v);
 const keys=(v:Record<string,unknown>,required:string[],optional:string[]=[])=>required.every(k=>own(v,k)) && Object.keys(v).every(k=>required.includes(k)||optional.includes(k));
@@ -74,21 +83,55 @@ export class SceneEngine {
     throw Error('Ambiguous or missing type reference');
   }
   /**
-   * Where a placement lands. If another object already sits there, the same 0.12 steps used for repeated spots
-   * (left, right, further left, ...) are tried until the spot is free, so objects never stack invisibly.
-   * Allowed to overlap: the relation's reference ("a cat on the house") and `ignore` (the object being moved).
+   * Where a placement lands. A named spot or relation that is already occupied is walked, in small steps,
+   * to the nearest free spot whose stamp box does not cover another stamp. "on" may cover its reference
+   * (a cat stays on the roof) and only slides sideways within that roof. "above" stays above: if the box
+   * would cover the reference it is lifted clear, then siblings slide sideways. `ignore` is the object being moved.
    */
-  private position(pos:Pos|undefined,objects:SceneObject[],focus:string|null,added:Map<number,string>,ignore:string[]=[]):[number,number]{
-    const skip=new Set(ignore);let base:[number,number];
-    if(!pos||typeof pos==='string')base=SPOT_COORDS[pos||'center'];
-    else{const target=this.resolve(pos.ref,objects,focus,added);skip.add(target.id);const [dx,dy]=OFFSETS[pos.relation];base=[target.x+dx,target.y+dy]}
-    const free=(x:number,y:number)=>objects.every(o=>skip.has(o.id)||Math.abs(o.x-x)>=SPREAD||Math.abs(o.y-y)>=SPREAD);
-    for(let n=0;n<=8;n++){
-      const shift=n===0?0:(n%2===1?-1:1)*Math.ceil(n/2)*SPREAD;
-      const x=clamp(base[0]+shift,.08,.92),y=clamp(base[1],.08,.92);
-      if(free(x,y))return [x,y];
+  private position(pos:Pos|undefined,objects:SceneObject[],focus:string|null,added:Map<number,string>,type:ObjectType,scale:number,ignore:string[]=[]):[number,number]{
+    const skip=new Set(ignore);let relation:Relation|undefined;let ref:SceneObject|undefined;let base:[number,number];
+    if(!pos||typeof pos==='string')base=[...SPOT_COORDS[pos||'center']];
+    else{
+      ref=this.resolve(pos.ref,objects,focus,added);relation=pos.relation;
+      if(relation==='on')skip.add(ref.id);
+      const [dx,dy]=OFFSETS[relation];base=[ref.x+dx,ref.y+dy];
     }
-    return [clamp(base[0],.08,.92),clamp(base[1],.08,.92)];
+    const [hw,hh]=halves(type,scale);
+    if(ref&&relation&&relation!=='on'&&relation!=='near'&&boxesOverlap(base[0],base[1],hw,hh,ref)){
+      const [rw,rh]=halves(ref.type,ref.scale);
+      if(relation==='above')base=[base[0],ref.y-rh-hh];
+      else if(relation==='below')base=[base[0],ref.y+rh+hh];
+      else if(relation==='left_of')base=[ref.x-rw-hw,base[1]];
+      else base=[ref.x+rw+hw,base[1]];
+    }
+    const allowed=(x:number,y:number)=>{
+      if(!ref||!relation)return true;
+      if(relation==='on')return Math.abs(x-ref.x)<=ON_REACH && y<=ref.y;
+      if(relation==='above')return y<ref.y-.05;
+      if(relation==='below')return y>ref.y+.05;
+      if(relation==='left_of')return x<ref.x-.05;
+      if(relation==='right_of')return x>ref.x+.05;
+      return Math.abs(x-ref.x)<=.3 && Math.abs(y-ref.y)<=.25;
+    };
+    const area=(x:number,y:number)=>objects.reduce((sum,o)=>{
+      if(skip.has(o.id))return sum;
+      const [ow,oh]=halves(o.type,o.scale);
+      const w=hw+ow-Math.abs(x-o.x),h=hh+oh-Math.abs(y-o.y);
+      return w>0&&h>0?sum+w*h:sum;
+    },0);
+    const shifts=[0];
+    for(let i=1;i<=46;i++)shifts.push(-i*SPREAD,i*SPREAD);
+    const yShifts=relation==='on'?[0]:relation==='above'?shifts.filter(d=>d<=0):relation==='below'?shifts.filter(d=>d>=0):shifts;
+    let best:[number,number]=[clamp(base[0],.08,.92),clamp(base[1],.08,.92)];
+    let bestArea=Infinity,bestDist=Infinity;
+    for(const dy of yShifts)for(const dx of shifts){
+      const x=clamp(base[0]+dx,.08,.92),y=clamp(base[1]+dy,.08,.92);
+      if(!allowed(x,y))continue;
+      const overlap=area(x,y),dist=Math.abs(dx)+Math.abs(dy);
+      if(overlap<bestArea-1e-9||(Math.abs(overlap-bestArea)<1e-9&&dist<bestDist)){best=[x,y];bestArea=overlap;bestDist=dist}
+      if(overlap===0)return best;
+    }
+    return best;
   }
   /** Returns false on invalid batch, leaving all state unchanged. Empty [] is a successful no-op. */
   execute(candidate:unknown):boolean {
@@ -109,13 +152,14 @@ export class SceneEngine {
         const op=ops[i];
         switch(op.op){
           case 'add':{
-            const [x,y]=this.position(op.at,objects,focus,added);
+            const scale=op.scale??1;
+            const [x,y]=this.position(op.at,objects,focus,added,op.type,scale);
             const id=`${op.type}_${++counters[op.type]}`;
-            objects.push({id,type:op.type,color:op.color||DEFAULTS[op.type],x,y,scale:op.scale??1});
+            objects.push({id,type:op.type,color:op.color||DEFAULTS[op.type],x,y,scale});
             added.set(i,id);focus=id;break;
           }
           case 'recolor':{const o=this.resolve(op.target,objects,focus,added);o.color=op.color;focus=o.id;break}
-          case 'move':{const o=this.resolve(op.target,objects,focus,added);const [x,y]=this.position(op.to,objects,focus,added,[o.id]);o.x=x;o.y=y;focus=o.id;break}
+          case 'move':{const o=this.resolve(op.target,objects,focus,added);const [x,y]=this.position(op.to,objects,focus,added,o.type,o.scale,[o.id]);o.x=x;o.y=y;focus=o.id;break}
           case 'scale':{const o=this.resolve(op.target,objects,focus,added);o.scale=clamp(o.scale*op.factor,.3,2);focus=o.id;break}
           case 'delete':{const o=this.resolve(op.target,objects,focus,added);objects.splice(objects.findIndex(v=>v.id===o.id),1);focus=null;break}
           case 'clear':objects.length=0;focus=null;break;

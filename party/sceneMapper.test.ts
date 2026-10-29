@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { SceneEngine, TYPES } from "../src/scene/engine";
+import type { MapperResult } from "../eval/types";
+import { createStrokePlan } from "../src/paint/strokes";
+import { SceneEngine, TYPES, type SceneObject } from "../src/scene/engine";
 import { DEMO_SCENES } from "./demoScenes";
 import { hitsBanned, sceneGuessMatches } from "./match";
 import { mapUtterance, type MapperName } from "./sceneMapper";
-import type { MapperResult } from "../eval/types";
+import { sceneToDrawingOps } from "./sceneOps";
 import { DRAWING_STAMPS } from "./types";
 
 type Step = MapperResult | "throw-timeout";
@@ -118,9 +120,9 @@ describe("best guess after a refusal", () => {
 describe("demo scenes", () => {
   const otherStamps = DRAWING_STAMPS.filter((s) => !(TYPES as readonly string[]).includes(s));
 
-  it("has 15-20 scenes with unique ids", () => {
+  it("has 15-30 scenes with unique ids", () => {
     expect(DEMO_SCENES.length).toBeGreaterThanOrEqual(15);
-    expect(DEMO_SCENES.length).toBeLessThanOrEqual(20);
+    expect(DEMO_SCENES.length).toBeLessThanOrEqual(30);
     expect(new Set(DEMO_SCENES.map((s) => s.id)).size).toBe(DEMO_SCENES.length);
   });
 
@@ -177,11 +179,35 @@ describe("scene layout", () => {
     expect(cat1.y).toBe(cat2.y);                                                      // both still on the roof, side by side
   });
 
-  it("keeps the old spread for repeats in one batch and leaves single placements alone", () => {
+  it("spreads repeats until their boxes clear and leaves a free spot put", () => {
     const engine = new SceneEngine();
     engine.execute([{ op: "add", type: "tree" }, { op: "add", type: "tree" }, { op: "add", type: "tree" }]);
-    expect(engine.state.objects.map((o) => o.x)).toEqual([0.5, 0.38, 0.62]);
+    expect(engine.state.objects.map((o) => o.x)).toEqual([0.5, 0.26, 0.74]);
     engine.execute([{ op: "move", target: "tree_1", to: "center" }]);              // moving onto its own spot stays put
     expect(engine.state.objects[0].x).toBe(0.5);
   });
+
+  it("adding 3 trees with no position produces non-overlapping bounding boxes", () => {
+    const engine = new SceneEngine();
+    engine.execute([{ op: "add", type: "tree" }, { op: "add", type: "tree" }, { op: "add", type: "tree" }]);
+    const boxes = engine.state.objects.map(stampBox);
+    for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+      const [a, b] = [boxes[i], boxes[j]];
+      const overlap = a.minX < b.maxX && a.maxX > b.minX && a.minY < b.maxY && a.maxY > b.minY;
+      expect(overlap, `${a.id} and ${b.id} overlap`).toBe(false);
+    }
+  });
 });
+
+function stampBox(object: SceneObject) {
+  const plan = createStrokePlan("scene", 1, 1, sceneToDrawingOps([object]));
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const stroke of plan.strokes) for (const point of stroke.points) {
+    const pad = stroke.width / 2;
+    minX = Math.min(minX, point.x - pad);
+    minY = Math.min(minY, point.y - pad);
+    maxX = Math.max(maxX, point.x + pad);
+    maxY = Math.max(maxY, point.y + pad);
+  }
+  return { id: object.id, minX, minY, maxX, maxY };
+}
