@@ -44,6 +44,18 @@ const CASES: Case[] = [
   { id: "white-house-orange-cat", expect: { objects: [{ type: "house", color: "white" }, { type: "cat", color: "orange" }] } },
   { id: "tree-right-house-left", expect: { objects: [{ type: "tree" }, { type: "house" }], spots: [["tree", "right"], ["house", "left"]] } },
   { id: "small-house-big-cloud", expect: { objects: [{ type: "house", size: "small" }, { type: "cloud", size: "big" }], relations: [["house", "under", "cloud"]] } },
+  { id: "two-suns-house", expect: { objects: [{ type: "house" }, { type: "sun", count: 2 }], relations: [["sun", "above", "house"]] } },
+  { id: "big-house-small-cloud", expect: { objects: [{ type: "house", size: "big" }, { type: "cloud", size: "small" }], relations: [["cloud", "above", "house"]] } },
+  { id: "red-sun-blue-cloud", expect: { objects: [{ type: "sun", color: "red" }, { type: "cloud", color: "blue" }] } },
+  { id: "house-left-sun-right", expect: { objects: [{ type: "house" }, { type: "sun" }], spots: [["house", "left"], ["sun", "right"]] } },
+  { id: "three-clouds-house", expect: { objects: [{ type: "house" }, { type: "cloud", count: 3 }], relations: [["cloud", "above", "house"]] } },
+  { id: "purple-house-yellow-sun", expect: { objects: [{ type: "house", color: "purple" }, { type: "sun", color: "yellow" }], relations: [["sun", "above", "house"]] } },
+  { id: "small-sun-big-cloud", expect: { objects: [{ type: "sun", size: "small" }, { type: "cloud", size: "big" }] } },
+  { id: "cloud-left-house-right", expect: { objects: [{ type: "cloud" }, { type: "house" }], spots: [["cloud", "left"], ["house", "right"]] } },
+  { id: "white-house-orange-cloud", expect: { objects: [{ type: "house", color: "white" }, { type: "cloud", color: "orange" }], relations: [["house", "under", "cloud"]] } },
+  { id: "sun-left-cloud-right", expect: { objects: [{ type: "sun" }, { type: "cloud" }], spots: [["sun", "left"], ["cloud", "right"]] } },
+  { id: "two-houses-big-sun", expect: { objects: [{ type: "house", count: 2 }, { type: "sun", size: "big" }], relations: [["house", "under", "sun"]] } },
+  { id: "green-house-pink-cloud", expect: { objects: [{ type: "cloud", color: "pink" }, { type: "house", color: "green" }], relations: [["house", "under", "cloud"]] } },
 ];
 
 function holds(rel: Rel, a: SceneObject, b: SceneObject): boolean {

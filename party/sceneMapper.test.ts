@@ -120,9 +120,9 @@ describe("best guess after a refusal", () => {
 describe("demo scenes", () => {
   const otherStamps = DRAWING_STAMPS.filter((s) => !(TYPES as readonly string[]).includes(s));
 
-  it("has 15-20 scenes with unique ids", () => {
+  it("has 15-30 scenes with unique ids", () => {
     expect(DEMO_SCENES.length).toBeGreaterThanOrEqual(15);
-    expect(DEMO_SCENES.length).toBeLessThanOrEqual(20);
+    expect(DEMO_SCENES.length).toBeLessThanOrEqual(30);
     expect(new Set(DEMO_SCENES.map((s) => s.id)).size).toBe(DEMO_SCENES.length);
   });
 

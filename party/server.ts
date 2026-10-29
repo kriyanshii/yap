@@ -32,6 +32,11 @@ const KEEP_WARM_MS = 4 * 60_000;
 // Demo build: scenes drawable by the scene engine (cat, tree, house, sun, cloud). The classic clue list is src/clues.json.
 const CLUES: Clue[] = DEMO_SCENES;
 
+/** The scene's objects, so back-to-back rounds don't repeat the same combination. */
+function objectPair(clue: Clue): string {
+  return [...clue.banned].sort().join("+");
+}
+
 const GUESSED_ROASTS = [
   (n: string) => `${n} ruined the mystery. Thanks.`,
   (n: string) => `${n} has eyes. Suspicious.`,
@@ -436,7 +441,10 @@ export class YapServer extends Server<Env> {
   private pickClue(): Clue {
     const unused = CLUES.filter((c) => !this.usedClueIds.has(c.id));
     const pool = unused.length ? unused : CLUES;
-    const clue = pool[Math.floor(Math.random() * pool.length)];
+    const previous = this.clue ? objectPair(this.clue) : null;
+    const varied = previous ? pool.filter((c) => objectPair(c) !== previous) : pool;
+    const choices = varied.length ? varied : pool;
+    const clue = choices[Math.floor(Math.random() * choices.length)];
     this.usedClueIds.add(clue.id);
     return clue;
   }
