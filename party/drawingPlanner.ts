@@ -138,7 +138,7 @@ export function validateDrawingOps(value: unknown): DrawingOp[] {
     result.push({ stamp, color: candidate.color, size, count, x, y });
   }
 
-  return result;
+  return spreadOverlaps(result);
 }
 
 function stripCodeFence(value: string) {
@@ -172,4 +172,72 @@ function clampNumber(value: unknown, min: number, max: number, fallback: number)
 function clampInteger(value: unknown, min: number, max: number, fallback: number) {
   if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
   return Math.max(min, Math.min(max, Math.round(value)));
+}
+
+/** Half-width and half-height in the 0–100 canvas, medium size, one copy. Measured from the stamp drawings. */
+const STAMP_HALF: Record<DrawingStamp, [number, number]> = {
+  mountain: [32.5, 20],
+  river: [28.49, 26.34],
+  cloud: [13.48, 6.74],
+  sun: [10.58, 10.58],
+  moon: [9.5, 8.58],
+  tree: [11.19, 16.7],
+  house: [13.94, 18.23],
+  person: [8.74, 14.56],
+  cat: [13.79, 15.78],
+  dog: [13.79, 14.25],
+  bird: [8.59, 2.77],
+  fish: [14.86, 5.67],
+  boat: [13.33, 19.15],
+  car: [14.56, 9.04],
+  windmill: [15.28, 26.92],
+  bear: [9.35, 16.09],
+};
+
+function footprint(op: DrawingOp): [number, number] {
+  const countScale = Math.max(0.72, 1.05 - op.count * 0.07) / 0.98;
+  const sizeScale = op.size === "small" ? 0.65 : op.size === "large" ? 1.3 : 1;
+  const [w, h] = STAMP_HALF[op.stamp];
+  const spacing = (op.size === "small" ? 24 : op.size === "large" ? 52 : 38) / 3.2;
+  return [w * countScale * sizeScale + ((op.count - 1) / 2) * spacing, h * countScale * sizeScale];
+}
+
+/** Later stamps that would draw on top of an earlier one step sideways, then up or down, until the boxes are clear. */
+function spreadOverlaps(ops: DrawingOp[]): DrawingOp[] {
+  const placed: DrawingOp[] = [];
+  const shifts = [0];
+  for (let i = 1; i <= 8; i++) shifts.push(-i * 12, i * 12);
+
+  for (const op of ops) {
+    const [hw, hh] = footprint(op);
+    let bestX = op.x;
+    let bestY = op.y;
+    let bestArea = Infinity;
+    let bestDist = Infinity;
+    let settled = false;
+    for (const dy of shifts) {
+      if (settled) break;
+      for (const dx of shifts) {
+        const x = clampNumber(op.x + dx, 5, 95, op.x);
+        const y = clampNumber(op.y + dy, 8, 92, op.y);
+        let area = 0;
+        for (const other of placed) {
+          const [ow, oh] = footprint(other);
+          const w = hw + ow - Math.abs(x - other.x);
+          const h = hh + oh - Math.abs(y - other.y);
+          if (w > 0 && h > 0) area += w * h;
+        }
+        const dist = Math.abs(dx) + Math.abs(dy);
+        if (area < bestArea - 1e-9 || (Math.abs(area - bestArea) < 1e-9 && dist < bestDist)) {
+          bestX = x;
+          bestY = y;
+          bestArea = area;
+          bestDist = dist;
+        }
+        if (area === 0) { settled = true; break; }
+      }
+    }
+    placed.push({ ...op, x: bestX, y: bestY });
+  }
+  return placed;
 }
