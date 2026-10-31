@@ -11,6 +11,8 @@ export interface Paraphraser {
 
 const SLOT_CANON: Record<string, string> = {
   cats: 'cat', trees: 'tree', houses: 'house', suns: 'sun', clouds: 'cloud',
+  mountains: 'mountain', rivers: 'river', moons: 'moon', people: 'person', persons: 'person',
+  dogs: 'dog', birds: 'bird', boats: 'boat', cars: 'car', windmills: 'windmill', bears: 'bear', puppy: 'dog', puppies: 'dog',
   large: 'big', little: 'small', larger: 'bigger', largest: 'biggest', centre: 'center', middle: 'center',
   beside: 'near', next: 'near', over: 'above', under: 'below', beneath: 'below', underneath: 'below',
   an: 'a', one: 'a',

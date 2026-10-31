@@ -117,8 +117,16 @@ describe("best guess after a refusal", () => {
   });
 });
 
+describe("stamps", () => {
+  it("uses the same sixteen stamps the painter draws", () => {
+    expect([...TYPES].sort()).toEqual([...DRAWING_STAMPS].sort());
+  });
+});
+
 describe("demo scenes", () => {
-  const otherStamps = DRAWING_STAMPS.filter((s) => !(TYPES as readonly string[]).includes(s));
+  // The live clue pack stays on the original five nouns until a retrain shows the wider list actually draws.
+  const clueNouns = ["cat", "tree", "house", "sun", "cloud"] as const;
+  const otherStamps = DRAWING_STAMPS.filter((s) => !(clueNouns as readonly string[]).includes(s));
 
   it("has 15-30 scenes with unique ids", () => {
     expect(DEMO_SCENES.length).toBeGreaterThanOrEqual(15);
@@ -132,10 +140,10 @@ describe("demo scenes", () => {
       for (const stamp of otherStamps) expect(words, s.id).not.toContain(stamp);
       expect(s.banned.length, s.id).toBeGreaterThan(0);
       for (const b of s.banned) {
-        expect(TYPES as readonly string[], s.id).toContain(b);
+        expect(clueNouns as readonly string[], s.id).toContain(b);
         expect(hitsBanned(s.text, [b]), `${s.id}: "${b}" is in the text`).toBe(true);
       }
-      const named = TYPES.filter((t) => hitsBanned(s.text, [t]));
+      const named = clueNouns.filter((t) => hitsBanned(s.text, [t]));
       expect([...s.banned].sort(), `${s.id}: every object noun in the text is banned`).toEqual([...named].sort());
     }
   });

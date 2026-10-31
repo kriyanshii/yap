@@ -83,4 +83,10 @@ Examples:
 {"utterance":"go back","scene":{"objects":[]},"focus_id":null,"history_len":0}
 -> []
 {"utterance":"a tree and a dog","scene":{"objects":[]},"focus_id":null,"history_len":0}
+-> [{"op":"add","type":"tree"},{"op":"add","type":"dog"}]
+{"utterance":"the pet that barks and wags its tail","scene":{"objects":[]},"focus_id":null,"history_len":0}
+-> [{"op":"add","type":"dog"}]
+{"utterance":"draw an animal","scene":{"objects":[]},"focus_id":null,"history_len":0}
+-> []
+{"utterance":"a tree and a dragon","scene":{"objects":[]},"focus_id":null,"history_len":0}
 -> []`;

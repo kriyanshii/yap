@@ -1,10 +1,11 @@
-// Usage: npm run eval -- --mapper keyword|gemini|qwen [--bench v1|v2] [--only add,focus] [--rpm 15]
-// --bench picks the benchmark file (default v1). Results go to results/<mapper>-<bench>-<timestamp>.jsonl.
+// Usage: npm run eval -- --mapper keyword|gemini|qwen [--bench v1|v2|scenic] [--only add,focus] [--rpm 15]
+// --bench picks the benchmark (default v1). scenic is the held-out wording set. Results go to results/<mapper>-<bench>-<timestamp>.jsonl.
 // --rpm paces requests (default 15 for gemini, the free-tier limit); waiting is not counted in latency.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { KeywordMapper } from './mappers/keyword.ts';
 import { caseErrors } from './schema.ts';
+import { SCENIC_CASES } from './scenicCases.ts';
 import { scoreCase, type Failure, type Scores } from './scorer.ts';
 import type { EvalCase, SceneMapper, SceneOperation } from './types.ts';
 
@@ -18,8 +19,10 @@ interface Row { id: string; category: string; policy: string; utterance: string;
 /** Loads a benchmark and checks every case against the validate.mjs rules, so a bad file fails before any API calls. */
 function loadBenchmark(bench: string): EvalCase[] {
   const url = BENCHMARKS[bench];
-  if (!url) throw new Error(`unknown bench "${bench}" (expected ${Object.keys(BENCHMARKS).join(' or ')})`);
-  const records: unknown[] = readFileSync(url, 'utf8').split('\n').filter(Boolean).map(l => JSON.parse(l));
+  const records: unknown[] = bench === 'scenic' ? SCENIC_CASES
+    : url ? readFileSync(url, 'utf8').split('\n').filter(Boolean).map(l => JSON.parse(l))
+    : null as unknown as unknown[];
+  if (!records) throw new Error(`unknown bench "${bench}" (expected scenic, ${Object.keys(BENCHMARKS).join(' or ')})`);
   const seen = new Set<string>();
   const errors = records.flatMap((r: any, i) => {
     const errs = caseErrors(r).map(e => `line ${i + 1} (${r?.id}): ${e}`);
@@ -27,7 +30,7 @@ function loadBenchmark(bench: string): EvalCase[] {
     seen.add(r?.id);
     return errs;
   });
-  if (errors.length) throw new Error(`${url.pathname} is invalid:\n  ${errors.join('\n  ')}`);
+  if (errors.length) throw new Error(`${bench === 'scenic' ? 'scenic' : url!.pathname} is invalid:\n  ${errors.join('\n  ')}`);
   return records as EvalCase[];
 }
 

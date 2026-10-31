@@ -19,7 +19,7 @@ export interface SceneOpts {
 }
 
 const round = (v: number) => Math.round(v * 100) / 100;
-const SKY: readonly ObjectType[] = ['sun', 'cloud'];
+const SKY: readonly ObjectType[] = ['sun', 'cloud', 'moon'];
 
 function position(rng: Rng, type: ObjectType): [number, number] {
   const x = round(0.08 + rng.next() * 0.84);

@@ -3,7 +3,7 @@
 // (the model refusing, e.g. chatter), not a failure. After a refusal, an optional "best guess" (Gemini, game prompt) may
 // still draw new objects from a loose description; it can only add, never edit or remove.
 // Only the utterance and the scene graph are sent, never the secret scene.
-import type { Op } from "../src/scene/engine.ts";
+import { TYPES, type Op } from "../src/scene/engine.ts";
 import { GEMINI_MODEL, RESPONSE_SCHEMA, SYSTEM_PROMPT } from "../eval/mappers/geminiPrompt.ts";
 import { keywordOps } from "../eval/mappers/keyword.ts";
 import { QwenMapper, guardOps } from "../eval/mappers/qwen.ts";
@@ -90,13 +90,24 @@ const ADD_ONLY_SCHEMA = { type: "array", items: RESPONSE_SCHEMA.items.anyOf[0] }
 
 /** Game prompt for the best guess: players describe things loosely (shape, color, parts), so pick the closest type. */
 export const BEST_GUESS_PROMPT = `You draw for a party guessing game. The player describes things on purpose without naming them, often by shape, color, parts or what they do.
-The only things you can draw: cat, tree, house, sun, cloud.
-For each thing the utterance describes, add the single closest of those five, even if the description is loose. Examples:
-- "an orange round thing" -> sun, color orange
+The only things you can draw: ${TYPES.join(', ')}.
+For each thing the utterance describes, add the single closest of those, even if the description is loose. Examples:
+- "an orange round thing in the daytime" -> sun, color orange
 - "something blue made of three circles on a line" -> cloud, color blue
 - "a green blob on a stick" -> tree
 - "a box with a triangle on top" -> house
-- "a little animal with pointy ears and whiskers" -> cat
+- "a little animal with pointy ears that purrs" -> cat
+- "a pet that barks and wags its tail" -> dog
+- "a tall rocky peak" -> mountain
+- "a flowing stream of water" -> river
+- "the pale round light in the night sky" -> moon
+- "someone with a face, arms and legs" -> person
+- "an animal with a beak and wings" -> bird
+- "an animal with fins that swims" -> fish
+- "a vessel that floats and carries people" -> boat
+- "a machine with four wheels" -> car
+- "a tall tower with blades that spin in the wind" -> windmill
+- "a big furry animal that likes honey" -> bear
 Output a JSON array of add ops only: {"op":"add","type",["color"],["at"],["scale"]}.
 Use color only if one is stated, from: red, orange, yellow, green, blue, purple, pink, brown, black, white, gray.
 Use "at" only if a position is stated: a spot (left, right, center, top, bottom, top-left, top-right, bottom-left, bottom-right; "in the sky" or "up high" is top) or {"relation": on|near|above|below|left_of|right_of, "ref": <id of an object in the scene, or {"added_in_op": N} for an earlier add in this array>}.

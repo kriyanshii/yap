@@ -4,7 +4,7 @@ import { TYPES } from '../../src/scene/engine.ts';
 import { caseErrors } from '../../eval/schema.ts';
 import { execute } from '../../eval/scorer.ts';
 import { generate, quotas, toChat } from './generator.ts';
-import { CATEGORY_WEIGHTS, ENGINE_CHECKED, sampleIntent, type Category } from './intents.ts';
+import { CATEGORY_WEIGHTS, ENGINE_CHECKED, STAMP_DESCRIPTIONS, VAGUE_BODIES, sampleIntent, scenicSentence, type Category } from './intents.ts';
 import { applyNoise } from './noise.ts';
 import { ruleParaphraser, slotsPreserved } from './paraphrase.ts';
 import { SFT_SYSTEM_PROMPT } from './prompt.ts';
@@ -119,4 +119,53 @@ test('noise: restarts repeat only verbs/articles, never an object; self-correcti
   const m = applyNoise('draw a sun on the right', [{ op: 'add', type: 'sun', at: 'right' }], rng, { mishear: true });
   assert.ok(m.mishear);
   assert.match(m.text, /\bson\b|\bwrite\b|^drawer\b/);
+});
+
+test('stamp descriptions name no stamp, and a refusal uses the same sentence with the description missing', () => {
+  const plural: Record<string, string> = { person: 'people', fish: 'fish' };
+  for (const type of TYPES) {
+    assert.ok(STAMP_DESCRIPTIONS[type].length >= 4, type);
+    const banned = [type, plural[type] ?? `${type}s`];
+    for (const line of STAMP_DESCRIPTIONS[type]) {
+      for (const text of [line.one, line.many]) {
+        for (const word of banned) assert.doesNotMatch(text, new RegExp(`\\b${word}\\b`), `${type}: ${text}`);
+      }
+    }
+  }
+  const clear = scenicSentence('put', 2, 'big', 'red', 'animals that purr', 'next to the house');
+  const vague = scenicSentence('put', 2, 'big', 'red', VAGUE_BODIES[0].many, 'next to the house');
+  assert.equal(clear, 'put two big red animals that purr next to the house');
+  assert.equal(vague, 'put two big red things next to the house');
+});
+
+test('indirect examples attach color, count, size and a relation, and vague or unfocused twins refuse', () => {
+  const rng = new Rng(21);
+  const seen = new Set<string>();
+  let colored = 0, sized = 0, counted = 0, related = 0, vague = 0, unfocused = 0;
+  for (let i = 0; i < 2500; i++) {
+    const it = sampleIntent(rng, 'indirect');
+    assert.ok(it);
+    assert.equal(it.policy, 'inferred');
+    assert.ok(execute(it.input, it.ops), it.input.utterance);
+    if (it.ops.length === 0) {
+      if (it.reason === 'vague_description') vague++;
+      if (it.reason === 'no_focus') {
+        unfocused++;
+        assert.equal(it.input.focus_id, null);
+      }
+      continue;
+    }
+    const type = it.ops[0].op === 'add' ? it.ops[0].type : undefined;
+    assert.ok(type, it.subtype);
+    seen.add(type);
+    assert.ok(it.ops.every(op => op.op === 'add' && op.type === type));
+    assert.doesNotMatch(it.input.utterance, new RegExp(`\\b${type}\\b`));
+    if (it.ops[0].op === 'add' && it.ops[0].color) colored++;
+    if (it.ops[0].op === 'add' && it.ops[0].scale !== undefined) sized++;
+    if (it.ops.length > 1) counted++;
+    if (it.ops[0].op === 'add' && it.ops[0].at && typeof it.ops[0].at === 'object') related++;
+  }
+  assert.deepEqual([...seen].sort(), [...TYPES].sort());
+  assert.ok(colored > 80 && sized > 80 && counted > 80 && related > 80, `color ${colored} size ${sized} count ${counted} relation ${related}`);
+  assert.ok(vague > 200 && unfocused > 100, `vague ${vague} unfocused ${unfocused}`);
 });
