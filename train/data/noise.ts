@@ -16,7 +16,7 @@ const MISHEARS: { name: string; re: RegExp; to: string }[] = [
   { name: 'sun->son', re: /\bsun\b/, to: 'son' },
   { name: 'red->read', re: /\bred\b/, to: 'read' },
   { name: 'right->write', re: /\bright\b/, to: 'write' },
-  { name: 'two->to', re: /\btwo (?=(cats|trees|houses|suns|clouds)\b)/, to: 'to ' },
+  { name: 'two->to', re: /\btwo (?=(cats|trees|houses|suns|clouds|mountains|rivers|moons|people|dogs|birds|fish|boats|cars|windmills|bears)\b)/, to: 'to ' },
   { name: 'draw a->drawer', re: /^draw an? (?=[a-z])/, to: 'drawer ' },
   { name: 'roof->rough', re: /\broof\b/, to: 'rough' },
 ];

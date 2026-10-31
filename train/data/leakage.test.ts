@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { SCENIC_CASES } from '../../eval/scenicCases.ts';
 import { generate } from './generator.ts';
 import { checkLeakage, editDistance, loadBenchmarkUtterances, nearestLeak, normalize, signature } from './leakage.ts';
 
@@ -17,8 +18,9 @@ test('normalize ignores case, punctuation and spacing', () => {
   assert.equal(normalize('  A sun, no,  a CLOUD! '), 'a sun no a cloud');
 });
 
-test('loads all 129 benchmark utterances (v1 50 + v2 79)', () => {
-  assert.equal(bench.length, 129);
+test('loads v1, v2 and the held-out scenic set', () => {
+  assert.equal(bench.length, 129 + SCENIC_CASES.length);
+  assert.ok(bench.some(b => b.id === 'indirect_001'));
 });
 
 test('signature: objects and relations, with mishears and spots canonicalized', () => {
@@ -51,7 +53,7 @@ test('leaks only when the wording is close AND the objects and relation are the 
 });
 
 test('every benchmark utterance is caught against itself', () => {
-  assert.equal(checkLeakage(bench.map(b => b.utterance), bench).leaks.length, 129);
+  assert.equal(checkLeakage(bench.map(b => b.utterance), bench).leaks.length, bench.length);
 });
 
 test('generated data has no leaks', () => {

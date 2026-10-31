@@ -1,7 +1,8 @@
-// Leakage check: a training utterance leaks if it is within character edit distance LEAK_DISTANCE of a v1 or v2 benchmark
-// utterance AND names the same objects and relations. So "put a tree next to the cat" may stay, but "put the cat on the house"
+// Leakage check: a training utterance leaks if it is within character edit distance LEAK_DISTANCE of a v1, v2, or scenic
+// benchmark utterance AND names the same objects and relations. So "put a tree next to the cat" may stay, but "put the cat on the house"
 // (a near-copy of a benchmark frame) may not. Mishears are canonicalized first, so "on the rough" counts as "on the roof".
 import { readFileSync } from 'node:fs';
+import { SCENIC_CASES } from '../../eval/scenicCases.ts';
 import { TYPES } from '../../src/scene/engine.ts';
 import { UNSUPPORTED_NOUNS } from './intents.ts';
 
@@ -31,6 +32,8 @@ export function editDistance(a: string, b: string, max = Infinity): number {
 const OBJECT_CANON: Record<string, string> = {
   cats: 'cat', trees: 'tree', houses: 'house', suns: 'sun', clouds: 'cloud', kitty: 'cat', kitten: 'cat',
   roof: 'house', rough: 'house', son: 'sun', dogs: 'dog', cars: 'car', birds: 'bird', apple: 'apples',
+  mountains: 'mountain', rivers: 'river', moons: 'moon', people: 'person', persons: 'person',
+  boats: 'boat', windmills: 'windmill', bears: 'bear', puppy: 'dog', puppies: 'dog', lakes: 'river', lake: 'river',
 };
 /** Nouns that count as objects: supported types, the generator's unsupported nouns, and the other nouns the benchmarks use. */
 const OBJECT_WORDS = new Set<string>([...TYPES, ...UNSUPPORTED_NOUNS, 'spaceship', 'tea', 'hat', 'chimney', 'smoke', 'apples', 'sunglasses', 'animal', 'pet']);
@@ -52,10 +55,12 @@ export function signature(text: string): string {
 export interface BenchUtterance { id: string; utterance: string; norm: string; sig: string }
 
 export function loadBenchmarkUtterances(root = new URL('../../', import.meta.url)): BenchUtterance[] {
-  return BENCHMARK_FILES.flatMap(f => readFileSync(new URL(f, root), 'utf8').split('\n').filter(Boolean).map(l => {
+  const fromFiles = BENCHMARK_FILES.flatMap(f => readFileSync(new URL(f, root), 'utf8').split('\n').filter(Boolean).map(l => {
     const c = JSON.parse(l);
     return { id: c.id as string, utterance: c.input.utterance as string, norm: normalize(c.input.utterance), sig: signature(c.input.utterance) };
   }));
+  const scenic = SCENIC_CASES.map(c => ({ id: c.id, utterance: c.input.utterance, norm: normalize(c.input.utterance), sig: signature(c.input.utterance) }));
+  return [...fromFiles, ...scenic];
 }
 
 /** The closest benchmark utterance within LEAK_DISTANCE that names the same objects and relations, else null. */

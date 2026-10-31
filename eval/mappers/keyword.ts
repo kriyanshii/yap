@@ -1,4 +1,5 @@
 // Deterministic rule-based baseline. Any word outside its vocabulary, or any reference it cannot resolve, gives [].
+import { DRAWING_STAMP_ALIASES } from '../../party/types.ts';
 import { COLORS, RELATIONS, SPOTS, TYPES, type Color, type ObjectType, type Pos, type Ref, type Relation, type Spot } from '../../src/scene/engine.ts';
 import type { MapperInput, SceneMapper, SceneOperation } from '../types.ts';
 
@@ -30,9 +31,16 @@ const COUNTS: Record<string, number> = { a: 1, an: 1, one: 1, two: 2, three: 3 }
 const FILLER = ['the', 'to', 'in', 'at', 'please', 'and', 'with', 'it', 'that', 'undo', 'clear', 'side', 'corner', 'on_top', 'on_roof'];
 const SIZES: Record<string, number> = { big: 1.5, small: 0.6 };
 const FACTORS: Record<string, number> = { bigger: 1.3, smaller: 0.75, x2: 2, 'x0.5': 0.5 };
+/** A bare "animal" or "furry" fits more than one stamp, so the strict parser refuses it instead of guessing bear. */
+const AMBIGUOUS_ALIAS = new Set(['animal', 'furry']);
+const ALIAS: Record<string, ObjectType> = Object.fromEntries(
+  Object.entries(DRAWING_STAMP_ALIASES).filter(([word]) => !AMBIGUOUS_ALIAS.has(word)),
+);
+const aliasPlural = (w: string) => (w.endsWith('y') && !'aeiou'.includes(w.at(-2) ?? '') ? `${w.slice(0, -1)}ies` : `${w}s`);
 const VOCAB = new Set([
   ...Object.keys(VERBS), ...Object.keys(COUNTS), ...FILLER, ...Object.keys(SIZES), ...Object.keys(FACTORS),
-  ...TYPES, ...TYPES.map(t => t + 's'), ...COLORS, ...SPOTS, ...RELATIONS,
+  ...TYPES, ...TYPES.map(t => t + 's'), ...Object.keys(ALIAS), ...Object.keys(ALIAS).map(aliasPlural),
+  ...COLORS, ...SPOTS, ...RELATIONS,
 ]);
 
 type Verb = 'add' | 'put' | 'make' | 'move' | 'delete';
@@ -52,7 +60,20 @@ interface Clause {
 
 class Reject extends Error {}
 
-const singular = (w: string) => (TYPES as readonly string[]).includes(w.replace(/s$/, '')) ? w.replace(/s$/, '') as ObjectType : undefined;
+const asType = (w: string): ObjectType | undefined =>
+  (TYPES as readonly string[]).includes(w) ? w as ObjectType
+  : (TYPES as readonly string[]).includes(ALIAS[w] ?? '') ? ALIAS[w] : undefined;
+/** A stamp, an alias ("lake", "puppy"), or a simple plural of either. */
+const singular = (w: string): ObjectType | undefined => {
+  const direct = asType(w);
+  if (direct) return direct;
+  if (w.endsWith('ies') && w.length > 4) {
+    const y = asType(`${w.slice(0, -3)}y`);
+    if (y) return y;
+  }
+  if (w.endsWith('s') && w.length > 1) return asType(w.slice(0, -1));
+  return undefined;
+};
 
 export function normalize(utterance: string): string[] {
   // Self-correction: keep only what follows the last "no" / "actually" / "i mean".

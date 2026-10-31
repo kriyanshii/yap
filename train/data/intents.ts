@@ -28,7 +28,10 @@ export interface Intent {
 type Gen = (rng: Rng) => Intent | null;
 
 // ---------- phrases ----------
-const PLURAL: Record<ObjectType, string> = { cat: 'cats', tree: 'trees', house: 'houses', sun: 'suns', cloud: 'clouds' };
+const PLURAL: Record<ObjectType, string> = {
+  mountain: 'mountains', river: 'rivers', cloud: 'clouds', sun: 'suns', moon: 'moons', tree: 'trees', house: 'houses', person: 'people',
+  cat: 'cats', dog: 'dogs', bird: 'birds', fish: 'fish', boat: 'boats', car: 'cars', windmill: 'windmills', bear: 'bears',
+};
 const NUM = ['zero', 'one', 'two', 'three', 'four', 'five'];
 const SIZE_WORDS: Record<number, string[]> = { 1.5: ['big', 'large'], 0.6: ['small', 'little'] };
 const SPOT_ADD: Record<Spot, string[]> = {
@@ -41,7 +44,7 @@ const SPOT_ADD: Record<Spot, string[]> = {
 const SKY_TOP = ['up in the sky', 'high in the sky', 'in the sky'];
 export const SKY_RE = /\b(up in|high in|in|across) the (daytime )?sky\b|\bup high\b|\bhigh up\b/;
 const spotText = (rng: Rng, spot: Spot, type?: ObjectType) =>
-  spot === 'top' && (type === 'sun' || type === 'cloud') && rng.chance(0.4) ? rng.pick(SKY_TOP) : rng.pick(SPOT_ADD[spot]);
+  spot === 'top' && (type === 'sun' || type === 'cloud' || type === 'moon') && rng.chance(0.4) ? rng.pick(SKY_TOP) : rng.pick(SPOT_ADD[spot]);
 const SPOT_MOVE: Record<Spot, string[]> = {
   left: ['to the left', 'over to the left', 'to the left side'], right: ['to the right', 'over to the right', 'to the right side'],
   center: ['to the middle', 'to the center'], top: ['to the top', 'up to the top', 'up high'], bottom: ['to the bottom', 'down to the bottom'],
@@ -56,14 +59,25 @@ const REL_WORDS: Record<Relation, string[]> = {
 const RELS = Object.keys(REL_WORDS) as Relation[];
 const ON_OK: readonly ObjectType[] = ['house', 'tree', 'cloud'];
 
-export const UNSUPPORTED_NOUNS = ['dog', 'car', 'bird', 'flower', 'boat', 'horse', 'moon', 'fish', 'mountain', 'river', 'rocket', 'robot', 'bicycle',
-  'dragon', 'airplane', 'snowman', 'butterfly', 'rainbow', 'fence', 'umbrella', 'pizza', 'guitar', 'train', 'cow', 'duck', 'lamp', 'truck', 'whale'];
+export const UNSUPPORTED_NOUNS = ['flower', 'horse', 'rocket', 'robot', 'bicycle', 'dragon', 'airplane', 'snowman', 'butterfly', 'rainbow',
+  'fence', 'pizza', 'guitar', 'train', 'cow', 'lamp', 'truck'];
 const EXTRAS: Record<ObjectType, string[]> = {
-  cat: ['wearing a scarf', 'with a bow tie', 'holding a fish', 'with a crown on', 'wearing boots'],
-  tree: ['with apples', 'with a swing hanging from it', 'with flowers around it', 'with a ladder against it', 'with an owl in it'],
+  mountain: ['with a flag on the summit', 'with a tunnel through it', 'with snow only on the tip'],
+  river: ['with stepping stones', 'with a waterfall', 'with a bridge over it'],
+  cloud: ['with lightning', 'with rain falling', 'with a rainbow under it'],
+  sun: ['with a smiley face', 'wearing a hat', 'with stars around it'],
+  moon: ['with a face on it', 'wearing a hat', 'with a ring around it'],
+  tree: ['with apples', 'with a swing hanging from it', 'with flowers around it', 'with a ladder against it'],
   house: ['with a chimney', 'with a garden', 'with a fence around it', 'with a garage', 'with a mailbox out front'],
-  sun: ['with a smiley face', 'wearing a hat', 'with a moon next to it', 'with stars around it'],
-  cloud: ['with lightning', 'with rain falling', 'with a rainbow under it', 'with birds flying past'],
+  person: ['wearing a hat', 'with a backpack', 'holding a balloon'],
+  cat: ['wearing a scarf', 'with a bow tie', 'with a crown on', 'wearing boots'],
+  dog: ['wearing a collar', 'with a leash', 'holding a stick'],
+  bird: ['with a worm', 'wearing a tiny hat'],
+  fish: ['with bubbles around it', 'wearing a tiny crown'],
+  boat: ['with a sail', 'with an anchor', 'with a flag'],
+  car: ['with a spoiler', 'with a roof rack'],
+  windmill: ['with a door', 'with a ladder against it'],
+  bear: ['wearing a scarf', 'holding a honey pot'],
 };
 export const UNSUPPORTED_COLORS = ['silver', 'gold', 'teal', 'beige', 'maroon', 'turquoise', 'navy', 'lavender', 'cyan', 'magenta', 'cream',
   'crimson', 'tan', 'olive', 'indigo', 'peach', 'lime', 'violet'];
@@ -76,17 +90,120 @@ const UNDO_PHRASES = ['undo', 'undo that', 'undo the last thing', 'go back', 'ta
   'revert that', 'oops undo', 'that was wrong undo it', 'go back one step', 'reverse that'];
 const CLEAR_PHRASES = ['clear', 'clear everything', 'clear the canvas', 'clear it all', 'start over', 'wipe the canvas', 'erase everything',
   'delete everything', 'clear the screen', 'start from scratch', 'wipe everything', 'remove everything', 'clear the whole picture'];
-const INDIRECT_CLEAR: Record<ObjectType, string[]> = {
-  cat: ['the animal that purrs', 'a pet that says meow', 'a pet with whiskers that purrs', 'the furry animal that hunts mice', 'the pet that sleeps all day and purrs'],
-  tree: ['a tall plant with branches', 'the thing birds build nests in', 'a plant with bark and branches', 'the plant that drops its leaves in autumn', 'a woody plant that grows tall'],
-  house: ['a home with a roof and a door', 'the place where people live', 'a building with windows and a front door', 'the place you go home to at night'],
-  sun: ['the star that lights up the day', 'the hot glowing ball in the daytime sky', 'the bright light that makes it daytime', 'the thing that gives us daylight'],
-  cloud: ['a puffy shape that floats in the sky', 'the soft fluffy thing drifting across the sky', 'the thing in the sky that rain falls from', 'a fluffy patch of mist in the sky'],
+/** A description that picks exactly one stamp. The stamp's own noun is not in the line. `many` is the same line for a count. */
+export interface StampLine { one: string; many: string }
+export const STAMP_DESCRIPTIONS: Record<ObjectType, StampLine[]> = {
+  mountain: [
+    { one: 'tall rocky peak', many: 'tall rocky peaks' },
+    { one: 'high peak of rock', many: 'high peaks of rock' },
+    { one: 'tall ridge of rock on the horizon', many: 'tall ridges of rock on the horizon' },
+    { one: 'big heap of rock rising up', many: 'big heaps of rock rising up' },
+  ],
+  river: [
+    { one: 'flowing stream of water', many: 'flowing streams of water' },
+    { one: 'winding ribbon of water through the land', many: 'winding ribbons of water through the land' },
+    { one: 'long path of flowing water', many: 'long paths of flowing water' },
+    { one: 'stream that runs through the land', many: 'streams that run through the land' },
+  ],
+  cloud: [
+    { one: 'puffy shape that floats in the sky', many: 'puffy shapes that float in the sky' },
+    { one: 'soft fluffy thing drifting across the sky', many: 'soft fluffy things drifting across the sky' },
+    { one: 'thing in the sky that rain falls from', many: 'things in the sky that rain falls from' },
+    { one: 'fluffy patch of mist in the sky', many: 'fluffy patches of mist in the sky' },
+  ],
+  sun: [
+    { one: 'hot glowing ball in the daytime sky', many: 'hot glowing balls in the daytime sky' },
+    { one: 'bright light that makes it daytime', many: 'bright lights that make it daytime' },
+    { one: 'thing that gives us daylight', many: 'things that give us daylight' },
+    { one: 'star that lights up the day', many: 'stars that light up the day' },
+  ],
+  moon: [
+    { one: 'pale round light in the night sky', many: 'pale round lights in the night sky' },
+    { one: 'round light that comes out at night', many: 'round lights that come out at night' },
+    { one: 'glowing circle that shines at night', many: 'glowing circles that shine at night' },
+    { one: 'pale circle you see at night', many: 'pale circles you see at night' },
+  ],
+  tree: [
+    { one: 'tall plant with branches', many: 'tall plants with branches' },
+    { one: 'plant with bark and branches', many: 'plants with bark and branches' },
+    { one: 'woody plant that grows tall', many: 'woody plants that grow tall' },
+    { one: 'plant that drops its leaves in autumn', many: 'plants that drop their leaves in autumn' },
+  ],
+  house: [
+    { one: 'place where people live', many: 'places where people live' },
+    { one: 'home with a roof and a door', many: 'homes with a roof and a door' },
+    { one: 'building with windows and a front door', many: 'buildings with windows and a front door' },
+    { one: 'place you go home to at night', many: 'places you go home to at night' },
+  ],
+  person: [
+    { one: 'human standing upright', many: 'humans standing upright' },
+    { one: 'figure with a head a body and legs', many: 'figures with a head a body and legs' },
+    { one: 'standing figure with a face and two arms', many: 'standing figures with a face and two arms' },
+    { one: 'human with arms legs and a face', many: 'humans with arms legs and a face' },
+  ],
+  cat: [
+    { one: 'animal that purrs', many: 'animals that purr' },
+    { one: 'pet that says meow', many: 'pets that say meow' },
+    { one: 'pet with whiskers that purrs', many: 'pets with whiskers that purr' },
+    { one: 'furry animal that hunts mice', many: 'furry animals that hunt mice' },
+    { one: 'pet that sleeps all day and purrs', many: 'pets that sleep all day and purr' },
+  ],
+  dog: [
+    { one: 'pet that barks and wags its tail', many: 'pets that bark and wag their tails' },
+    { one: 'puppy that wags its tail', many: 'puppies that wag their tails' },
+    { one: 'animal that barks and fetches', many: 'animals that bark and fetch' },
+    { one: 'pet that wags its tail and barks', many: 'pets that wag their tails and bark' },
+  ],
+  bird: [
+    { one: 'animal with a beak and wings', many: 'animals with a beak and wings' },
+    { one: 'flying animal with feathers and a beak', many: 'flying animals with feathers and a beak' },
+    { one: 'creature with wings and a beak', many: 'creatures with wings and a beak' },
+    { one: 'feathered animal that has a beak', many: 'feathered animals that have a beak' },
+  ],
+  fish: [
+    { one: 'animal with fins that swims', many: 'animals with fins that swim' },
+    { one: 'swimmer with fins and scales', many: 'swimmers with fins and scales' },
+    { one: 'finned animal that swims', many: 'finned animals that swim' },
+    { one: 'animal with fins and scales that swims', many: 'animals with fins and scales that swim' },
+  ],
+  boat: [
+    { one: 'vessel that floats and carries people', many: 'vessels that float and carry people' },
+    { one: 'thing with a hull that floats', many: 'things with a hull that float' },
+    { one: 'floating vessel that carries people', many: 'floating vessels that carry people' },
+    { one: 'hull that floats and carries people', many: 'hulls that float and carry people' },
+  ],
+  car: [
+    { one: 'machine with four wheels that drives on roads', many: 'machines with four wheels that drive on roads' },
+    { one: 'vehicle with four wheels and windows', many: 'vehicles with four wheels and windows' },
+    { one: 'wheeled machine that drives on roads', many: 'wheeled machines that drive on roads' },
+    { one: 'four wheeled machine that drives', many: 'four wheeled machines that drive' },
+  ],
+  windmill: [
+    { one: 'tall tower with blades that spin in the wind', many: 'tall towers with blades that spin in the wind' },
+    { one: 'spinning fan on a tall pole that uses the wind', many: 'spinning fans on tall poles that use the wind' },
+    { one: 'tall pole with blades spun by the wind', many: 'tall poles with blades spun by the wind' },
+    { one: 'tower with a fan that spins in the wind', many: 'towers with fans that spin in the wind' },
+  ],
+  bear: [
+    { one: 'big furry animal that likes honey', many: 'big furry animals that like honey' },
+    { one: 'furry animal that hibernates', many: 'furry animals that hibernate' },
+    { one: 'animal with round ears that likes honey', many: 'animals with round ears that like honey' },
+    { one: 'large furry animal that eats honey', many: 'large furry animals that eat honey' },
+  ],
 };
-const INDIRECT_VAGUE = ['a creature', 'some kind of animal', 'something that lives outside', 'something big', 'something nice', 'a shape', 'a living thing',
-  'something in nature', 'something you see outside', 'something soft', 'something bright', 'a plant', 'a building', 'something with four legs',
-  'a thing that flies', 'something hot', 'something round and yellow', 'something green', 'a thing up in the air', 'something pretty', 'an object',
-  'something that moves', 'a thing you find in a park'];
+/** The same sentence shape as a clear description, with the identifying words missing. */
+export const VAGUE_BODIES: StampLine[] = [
+  { one: 'thing', many: 'things' },
+  { one: 'shape', many: 'shapes' },
+  { one: 'object', many: 'objects' },
+];
+
+/** One scenic sentence: verb, then count / size / color / description, then an optional place. */
+export function scenicSentence(verb: string, count: number, size: string | undefined, color: string | undefined, body: string, place?: string): string {
+  const core = join(size, color, body);
+  const named = count > 1 ? `${NUM[count]} ${core}` : `${art(core)} ${core}`;
+  return join(verb, named, place);
+}
 
 const art = (next: string) => (/^[aeiou]/.test(next) ? 'an' : 'a');
 const join = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join(' ');
@@ -603,19 +720,52 @@ const emptyGens: Record<string, [number, Gen]> = {
 };
 
 // ---------- indirect ----------
+// Clear descriptions, the same sentence with the identifying words removed (vague), and the same sentence
+// whose relation points at "it" when nothing is focused. The filled-in sentence is the clear case.
 const indirect: Gen = rng => {
-  const input = sampleScene(rng);
-  if (rng.chance(0.4)) {
-    const v = rng.pick(INDIRECT_VAGUE);
-    return empty('indirect_vague', input, join(rng.pick(['draw', 'add', 'make', 'can you draw', '']), v, rng.chance(0.25) && rng.pick(SPOT_ADD[rng.pick(SPOTS_LIST)])), 'vague_description', undefined, 'indirect');
-  }
+  const kind = rng.weighted({ clear: 5, vague: 3, no_focus: 2 });
   const type = rng.pick(TYPES);
-  const d = rng.pick(INDIRECT_CLEAR[type]);
-  const f: { color?: Color } = rng.chance(0.15) ? { color: rng.pick(COLORS) } : {};
-  const inSky = SKY_RE.test(d); // "a puffy shape that floats in the sky" already says where: top (V2-R5)
-  const spot: Spot | undefined = inSky ? 'top' : rng.chance(0.3) ? rng.pick(SPOTS_LIST) : undefined;
-  const text = join(spot && !inSky ? rng.pick(['put', 'draw', 'add']) : rng.pick(['draw', 'add', 'can you draw', 'i want', '']), d, spot && !inSky && spotText(rng, spot, type), f.color && `and make it ${f.color}`);
-  return intent('indirect', 'indirect_clear', input, text, [addOp(type, f, spot)]);
+  const line = rng.pick(STAMP_DESCRIPTIONS[type]);
+  const flavor = rng.weighted({ bare: 2, color: 2, size: 2, count: 2, placed: 3, full: 4 });
+  const n = flavor === 'count' || (flavor === 'full' && rng.chance(0.6)) ? rng.int(2, 3) : 1;
+  const color = flavor === 'color' || flavor === 'full' || (flavor === 'count' && rng.chance(0.5)) ? rng.pick(COLORS) : undefined;
+  const scale = flavor === 'size' || flavor === 'full' || (flavor === 'placed' && rng.chance(0.5)) ? rng.pick([1.5, 0.6]) : undefined;
+  const sizeWord = scale !== undefined ? rng.pick(SIZE_WORDS[scale]) : undefined;
+  const wantPlace = flavor === 'placed' || flavor === 'full';
+  const spoken = (body: StampLine) => (n > 1 ? body.many : body.one);
+
+  if (kind === 'no_focus') {
+    const input = sampleScene(rng, { min: 0, max: 3, focus: 'none' });
+    const rel = rng.pick(RELS.filter(r => r !== 'on'));
+    const place = relText(rng, rel, rng.pick(['it', 'that']), 'house');
+    const text = scenicSentence(rng.pick(['put', 'draw', 'add']), n, sizeWord, color, spoken(line), place);
+    return empty('indirect_no_focus', input, text, 'no_focus', undefined, 'indirect');
+  }
+
+  const input = sampleScene(rng, wantPlace ? { min: 1, max: 4 } : { max: 4 });
+  let at: Pos | undefined;
+  let place: string | undefined;
+  if (wantPlace) {
+    const anchors = uniqueTypes(input).filter(t => t !== type);
+    if (anchors.length && rng.chance(0.75)) {
+      const refType = rng.pick(anchors);
+      const rel = relFor(rng, refType);
+      at = { relation: rel, ref: ofType(input, refType)[0].id };
+      place = relText(rng, rel, theT(refType), refType);
+    } else {
+      const spot = rng.pick(SPOTS_LIST);
+      at = spot;
+      place = spot === 'top' ? spotText(rng, 'top', type) : rng.pick(SPOT_ADD[spot]);
+    }
+  }
+  const body = kind === 'vague' ? rng.pick(VAGUE_BODIES) : line;
+  const words = spoken(body);
+  if (!place && kind === 'clear' && SKY_RE.test(words)) at = 'top';
+  const verb = place ? rng.pick(['put', 'draw', 'add', 'place']) : rng.pick(['draw', 'add', 'sketch']);
+  const text = scenicSentence(verb, n, sizeWord, color, words, place);
+  if (kind === 'vague') return empty('indirect_vague', input, text, 'vague_description', undefined, 'indirect');
+  const f = { ...(color && { color }), ...(scale !== undefined && { scale }) };
+  return intent('indirect', 'indirect_clear', input, text, Array.from({ length: n }, () => addOp(type, f, at)));
 };
 
 function weightedGen(rng: Rng, table: Record<string, [number, Gen]>): Intent | null {

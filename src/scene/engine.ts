@@ -1,5 +1,6 @@
 // Scene engine v1 (from yap-scene-v1/src/engine.ts). The single copy: eval/ imports it from here, so the eval and the app cannot drift.
-export const TYPES = ['cat', 'tree', 'house', 'sun', 'cloud'] as const;
+/** The closed vocabulary: the same stamps the painter already draws (`DRAWING_STAMPS`). */
+export const TYPES = ['mountain', 'river', 'cloud', 'sun', 'moon', 'tree', 'house', 'person', 'cat', 'dog', 'bird', 'fish', 'boat', 'car', 'windmill', 'bear'] as const;
 export type ObjectType = typeof TYPES[number];
 export const COLORS = ['red','orange','yellow','green','blue','purple','pink','brown','black','white','gray'] as const;
 export type Color = typeof COLORS[number];
@@ -19,14 +20,21 @@ export type Op =
 export interface SceneObject {id:string;type:ObjectType;color:Color;x:number;y:number;scale:number}
 export interface Snapshot {objects:SceneObject[];focus_id:string|null}
 export interface State extends Snapshot { history: Snapshot[] }
-export const DEFAULTS:Record<ObjectType,Color>={cat:'gray',tree:'green',house:'brown',sun:'yellow',cloud:'white'};
+export const DEFAULTS:Record<ObjectType,Color>={
+  mountain:'gray',river:'blue',cloud:'white',sun:'yellow',moon:'yellow',tree:'green',house:'brown',person:'blue',
+  cat:'gray',dog:'brown',bird:'black',fish:'orange',boat:'brown',car:'red',windmill:'gray',bear:'brown',
+};
 const SPOT_COORDS:Record<Spot,[number,number]>={left:[.2,.5],right:[.8,.5],center:[.5,.5],top:[.5,.2],bottom:[.5,.8],'top-left':[.2,.2],'top-right':[.8,.2],'bottom-left':[.2,.8],'bottom-right':[.8,.8]};
 const OFFSETS:Record<Relation,[number,number]>={left_of:[-.2,0],right_of:[.2,0],above:[0,-.2],below:[0,.2],on:[0,-.14],near:[.13,.1]};
 const clamp=(v:number,lo:number,hi:number)=>Math.min(hi,Math.max(lo,v));
 /** Step used to walk a placement off an occupied spot. Fine enough to sit just clear of a stamp. */
 const SPREAD=.02;
 /** Half-width and half-height at scale 1, measured from the stamp drawings. A cat is drawn smaller than the others. */
-const EXTENT:Record<ObjectType,[number,number]>={cat:[.099,.112],tree:[.112,.167],house:[.140,.183],sun:[.106,.106],cloud:[.135,.068]};
+const EXTENT:Record<ObjectType,[number,number]>={
+  mountain:[.325,.200],river:[.285,.263],cloud:[.135,.068],sun:[.106,.106],moon:[.095,.086],tree:[.112,.167],house:[.140,.183],
+  person:[.087,.146],cat:[.099,.112],dog:[.138,.143],bird:[.086,.028],fish:[.149,.057],boat:[.133,.192],car:[.146,.090],
+  windmill:[.153,.269],bear:[.094,.161],
+};
 /** How far a thing "on" another may slide sideways and still read as on the roof. */
 const ON_REACH=.15;
 const halves=(type:ObjectType,scale:number):[number,number]=>{const [w,h]=EXTENT[type];return [w*scale,h*scale]};
@@ -69,7 +77,7 @@ export function validate(input:unknown): Op[] {
 export function parseOutput(json:string):Op[]{return validate(JSON.parse(json) as unknown)}
 export class SceneEngine {
   state:State={objects:[],focus_id:null,history:[]};
-  private counters:Record<ObjectType,number>={cat:0,tree:0,house:0,sun:0,cloud:0};
+  private counters:Record<ObjectType,number>=Object.fromEntries(TYPES.map(t=>[t,0])) as Record<ObjectType,number>;
   constructor(initial?:Snapshot){if(initial){this.state.objects=structuredClone(initial.objects);this.state.focus_id=initial.focus_id;for(const o of initial.objects){const n=Number(o.id.match(/_(\d+)$/)?.[1]||0);this.counters[o.type]=Math.max(this.counters[o.type],n)}}}
   snapshot():Snapshot{return {objects:structuredClone(this.state.objects),focus_id:this.state.focus_id}}
   private resolve(ref:Ref,objects:SceneObject[],focus:string|null,added:Map<number,string>):SceneObject {
