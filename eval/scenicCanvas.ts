@@ -1,4 +1,5 @@
-// Scenes whose hints never say a stamp name. They are not part of the live clue pack.
+// Circumlocution pictures checked without calling the model. The boat-on-a-river scene stays out of the live
+// clue pack, because "on the river" was refused on the scenic bench. The other pictures are live rounds.
 import type { Op } from '../src/scene/engine.ts';
 import type { Expect } from './pictureCheck.ts';
 
