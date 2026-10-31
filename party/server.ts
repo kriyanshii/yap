@@ -29,7 +29,7 @@ const WARMUP_MIN_GAP_MS = 60_000;
 /** Inside Modal's 5-minute idle window, so the GPU stays up while a room is open (costs GPU time while players idle). */
 const KEEP_WARM_MS = 4 * 60_000;
 
-// Demo build: scenes drawable by the scene engine (cat, tree, house, sun, cloud). The classic clue list is src/clues.json.
+// Demo build: scenes drawable by the scene engine (all 16 stamps). The classic clue list is src/clues.json.
 const CLUES: Clue[] = DEMO_SCENES;
 
 /** The scene's objects, so back-to-back rounds don't repeat the same combination. */

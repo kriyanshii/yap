@@ -124,28 +124,21 @@ describe("stamps", () => {
 });
 
 describe("demo scenes", () => {
-  // The live clue pack stays on the original five nouns until a retrain shows the wider list actually draws.
-  const clueNouns = ["cat", "tree", "house", "sun", "cloud"] as const;
-  const otherStamps = DRAWING_STAMPS.filter((s) => !(clueNouns as readonly string[]).includes(s));
-
   it("has 15-30 scenes with unique ids", () => {
     expect(DEMO_SCENES.length).toBeGreaterThanOrEqual(15);
     expect(DEMO_SCENES.length).toBeLessThanOrEqual(30);
     expect(new Set(DEMO_SCENES.map((s) => s.id)).size).toBe(DEMO_SCENES.length);
   });
 
-  it("uses only cat, tree, house, sun and cloud, and bans exactly the object nouns from its own text", () => {
+  it("bans exactly the stamp nouns in its own text, and every stamp appears in the pack", () => {
+    const seen = new Set<string>();
     for (const s of DEMO_SCENES) {
-      const words = s.text.split(/\s+/);
-      for (const stamp of otherStamps) expect(words, s.id).not.toContain(stamp);
-      expect(s.banned.length, s.id).toBeGreaterThan(0);
-      for (const b of s.banned) {
-        expect(clueNouns as readonly string[], s.id).toContain(b);
-        expect(hitsBanned(s.text, [b]), `${s.id}: "${b}" is in the text`).toBe(true);
-      }
-      const named = clueNouns.filter((t) => hitsBanned(s.text, [t]));
-      expect([...s.banned].sort(), `${s.id}: every object noun in the text is banned`).toEqual([...named].sort());
+      const named = DRAWING_STAMPS.filter((t) => hitsBanned(s.text, [t]));
+      expect(named.length, s.id).toBeGreaterThan(0);
+      expect([...s.banned].sort(), `${s.id}: every stamp noun in the text is banned`).toEqual([...named].sort());
+      for (const b of named) seen.add(b);
     }
+    expect([...seen].sort()).toEqual([...DRAWING_STAMPS].sort());
   });
 
   it("accepts a guess that names every object and color, in any order", () => {
@@ -165,6 +158,11 @@ describe("demo scene hints", () => {
       expect(s.hint!.phrases.length, s.id).toBeLessThanOrEqual(4);
       for (const text of [s.hint!.meaning, ...s.hint!.phrases]) {
         expect(hitsBanned(text, s.banned), `${s.id}: "${text}" uses a banned word`).toBe(false);
+      }
+      for (const phrase of s.hint!.phrases) {
+        expect(phrase, s.id).not.toMatch(/\bon the river\b/);
+        expect(phrase, s.id).not.toMatch(/\b(?:a|an) (?:animal|pet)s?\b(?!\s+(?:that|with)\b)/);
+        if (/\b(?:in|up in|high in) the sky\b/.test(phrase)) expect(phrase, s.id).toMatch(/\bat the top\b/);
       }
     }
   });
