@@ -25,7 +25,7 @@ const CASES: Case[] = [
   { id: "tree-red-house", expect: { objects: [{ type: "house", color: "red" }, { type: "tree" }], relations: [["tree", "next_to", "house"]] } },
   { id: "clouds-tree", expect: { objects: [{ type: "tree" }, { type: "cloud", count: 2 }], relations: [["cloud", "above", "tree"]] } },
   { id: "blue-cat-tree", expect: { objects: [{ type: "tree" }, { type: "cat", color: "blue" }], relations: [["cat", "under", "tree"]] } },
-  { id: "sun-cloud-top", expect: { objects: [{ type: "sun" }, { type: "cloud" }], spots: [["sun", "top"], ["cloud", "top"]] } },
+  { id: "person-bear", expect: { objects: [{ type: "person", size: "small" }, { type: "bear", size: "big" }], relations: [["bear", "next_to", "person"]] } },
   { id: "yellow-house-sun", expect: { objects: [{ type: "house", color: "yellow" }, { type: "sun" }], relations: [["sun", "above", "house"]] } },
   { id: "three-trees", expect: { objects: [{ type: "tree", count: 3 }, { type: "cat" }] } },
   { id: "cat-tree-left", expect: { objects: [{ type: "tree" }, { type: "cat" }], relations: [["cat", "next_to", "tree"]], spots: [["tree", "left"]] } },
@@ -47,9 +47,9 @@ const CASES: Case[] = [
   { id: "fish-boat", expect: { objects: [{ type: "boat" }, { type: "fish", size: "small" }], relations: [["fish", "next_to", "boat"]] } },
   { id: "red-car-house", expect: { objects: [{ type: "house" }, { type: "car", color: "red", size: "big" }], relations: [["car", "next_to", "house"]] } },
   { id: "windmill-person", expect: { objects: [{ type: "person" }, { type: "windmill" }], relations: [["windmill", "left_of", "person"]] } },
-  { id: "bear-tree", expect: { objects: [{ type: "tree" }, { type: "bear", color: "brown" }], relations: [["bear", "next_to", "tree"]] } },
+  { id: "bear-tree", expect: { objects: [{ type: "tree" }, { type: "bear", color: "brown", size: "big" }], relations: [["bear", "next_to", "tree"]] } },
   { id: "dog-person", expect: { objects: [{ type: "person" }, { type: "dog" }], relations: [["dog", "next_to", "person"]] } },
-  { id: "person-tree", expect: { objects: [{ type: "tree" }, { type: "person" }], relations: [["person", "under", "tree"]] } },
+  { id: "person-tree", expect: { objects: [{ type: "tree" }, { type: "person", size: "small" }], relations: [["person", "under", "tree"]] } },
 ];
 const caseIds = new Set(CASES.map((c) => c.id));
 const sceneIds = new Set(DEMO_SCENES.map((s) => s.id));

@@ -247,7 +247,7 @@ export function Play({ state, youId, secret, guesses, yapResult, hint, send, onH
               type="text"
               value={guess}
               onChange={(e) => setGuess(e.target.value)}
-              placeholder='e.g. "a blue cat under a tree"'
+              placeholder='e.g. "a blue cat hiding under a tree"'
               disabled={!playing}
               autoComplete="off"
               autoCapitalize="off"

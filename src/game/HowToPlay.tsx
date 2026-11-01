@@ -20,7 +20,7 @@ export function HowToPlay({ onClose }: { onClose: () => void }) {
         </div>
         <div className="help-body">
           <p className="help-lede">
-            One player, the <b>Yapper</b>, gets a secret scene like <i>"a blue cat under a tree"</i> and describes it out loud.
+            One player, the <b>Yapper</b>, gets a secret scene like <i>"a blue cat hiding under a tree"</i> and describes it out loud.
             An AI artist draws what they say. Everyone else guesses the scene from the drawing.
           </p>
 
@@ -42,7 +42,7 @@ export function HowToPlay({ onClose }: { onClose: () => void }) {
           <h3>🔎 If you're guessing</h3>
           <ol>
             <li>Watch the picture build up.</li>
-            <li>Type a guess that names <b>every object and colour</b> you see: <q>a blue cat under a tree</q>. Order doesn't matter.</li>
+            <li>Type a guess that names <b>every object and colour</b> you see: <q>a blue cat hiding under a tree</q>. Order doesn't matter.</li>
             <li>Wrong guesses show up as sticky notes, so guess as often as you like.</li>
           </ol>
 

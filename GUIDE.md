@@ -2,7 +2,7 @@
 
 **Play:** https://yap.kriyanshishah06.workers.dev
 
-Yap is a party guessing game. One player, the **Yapper**, gets a secret scene like *"a blue cat under a tree"* and describes it out loud. An AI artist draws what they say, live. Everyone else guesses the scene from the drawing.
+Yap is a party guessing game. One player, the **Yapper**, gets a secret scene like *"a blue cat hiding under a tree"* and describes it out loud. An AI artist draws what they say, live. Everyone else guesses the scene from the drawing.
 
 The same guide is in the game: press **How to play** on any screen.
 
@@ -55,7 +55,7 @@ The artist can draw sixteen things: **mountain, river, cloud, sun, moon, tree, h
 
 ## If you're guessing
 
-Watch the picture build, then type a guess that names **every object and colour** you see, for example "a blue cat under a tree". Order doesn't matter, and plurals are fine. Wrong guesses appear as sticky notes on the canvas, so guess as often as you like.
+Watch the picture build, then type a guess that names **every object and colour** you see, for example "a blue cat hiding under a tree". Order doesn't matter, and plurals are fine. Wrong guesses appear as sticky notes on the canvas, so guess as often as you like.
 
 ## Scoring
 
