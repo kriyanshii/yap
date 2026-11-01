@@ -3,7 +3,7 @@ import type { MapperResult } from "../eval/types";
 import { createStrokePlan } from "../src/paint/strokes";
 import { SceneEngine, TYPES, type SceneObject } from "../src/scene/engine";
 import { DEMO_SCENES } from "./demoScenes";
-import { hitsBanned, sceneGuessMatches } from "./match";
+import { hitsBanned, sceneColorBonus, sceneGuessMatches } from "./match";
 import { mapUtterance, type MapperName } from "./sceneMapper";
 import { sceneToDrawingOps } from "./sceneOps";
 import { DRAWING_STAMPS } from "./types";
@@ -141,12 +141,17 @@ describe("demo scenes", () => {
     expect([...seen].sort()).toEqual([...DRAWING_STAMPS].sort());
   });
 
-  it("accepts a guess that names every object and color, in any order", () => {
+  it("accepts a guess that names every object, and treats every colour as a bonus", () => {
     const blueCat = DEMO_SCENES.find((s) => s.id === "blue-cat-tree")!;
-    expect(sceneGuessMatches("tree and a blue cat", blueCat.required!)).toBe(true);
+    expect(sceneGuessMatches("a cat under a tree", blueCat.required!)).toBe(true);
     expect(sceneGuessMatches("blue cats under trees", blueCat.required!)).toBe(true);
-    expect(sceneGuessMatches("a cat under a tree", blueCat.required!)).toBe(false);
     expect(sceneGuessMatches("a blue cat", blueCat.required!)).toBe(false);
+    expect(sceneColorBonus("tree and a blue cat", blueCat.colors!)).toBe(true);
+    expect(sceneColorBonus("blue cats under trees", blueCat.colors!)).toBe(true);
+    expect(sceneColorBonus("a cat under a tree", blueCat.colors!)).toBe(false);
+    const bear = DEMO_SCENES.find((s) => s.id === "person-bear")!;
+    expect(bear.colors ?? []).toEqual([]);
+    expect(sceneColorBonus("a person and a bear", bear.colors ?? [])).toBe(false);
   });
 });
 

@@ -35,20 +35,20 @@ export function HowToPlay({ onClose }: { onClose: () => void }) {
 
           <h3>💡 Stuck?</h3>
           <ul>
-            <li><b>Hint:</b> shows what the scene is and phrases the artist understands. Tap a phrase to use it. It costs your +1 for that round.</li>
+            <li>The card shows what the scene is and phrases the artist understands. Tap a phrase to use it.</li>
             <li><b>Skip scene:</b> once per game, swap to a new scene with a fresh canvas. The timer keeps running.</li>
           </ul>
 
           <h3>🔎 If you're guessing</h3>
           <ol>
             <li>Watch the picture build up.</li>
-            <li>Type a guess that names <b>every object and colour</b> you see: <q>a blue cat hiding under a tree</q>. Order doesn't matter.</li>
+            <li>Type a guess that names <b>every object</b> you see: <q>a cat under a tree</q>. Order doesn't matter. Name every colour too, like <q>a blue cat hiding under a tree</q>, for a bonus point.</li>
             <li>Wrong guesses show up as sticky notes, so guess as often as you like.</li>
           </ol>
 
           <h3>🏆 Scoring</h3>
           <ul>
-            <li>First correct guess: <b>+2</b> for the guesser, <b>+1</b> for the Yapper (0 if they used a hint).</li>
+            <li>First correct guess: <b>+2</b> for the guesser, <b>+1</b> for the Yapper. Name every colour in the scene and the guesser gets <b>+1</b> more.</li>
             <li>Yapper says a red word: <b>+1</b> for everyone else.</li>
             <li>5 rounds of 75 seconds. The Yapper changes every round.</li>
           </ul>

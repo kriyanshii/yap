@@ -71,6 +71,7 @@ export function Play({ state, youId, secret, guesses, yapResult, hint, send, onH
     setGuess("");
   };
 
+  const script = secret?.hint ?? hint;
   const myLastGuess = lastGuess ? [...guesses].reverse().find((g) => g.name === me?.name && g.text === lastGuess) : undefined;
   const stickies = guesses.filter((g) => !g.correct).slice(-8).map((g) => ({ name: g.name, text: g.text }));
 
@@ -91,13 +92,6 @@ export function Play({ state, youId, secret, guesses, yapResult, hint, send, onH
             ))}
           </div>
           <div className="secret-actions">
-            {!state.hintUsed ? (
-              <button type="button" className="btn slim" onClick={() => send({ type: "hint" })}>
-                💡 Hint <small>(costs your +1)</small>
-              </button>
-            ) : !hint ? (
-              <button type="button" className="btn slim" onClick={() => send({ type: "hint" })}>💡 Show hint again</button>
-            ) : null}
             {secret.canSkip && (
               <button
                 type="button"
@@ -110,12 +104,12 @@ export function Play({ state, youId, secret, guesses, yapResult, hint, send, onH
               </button>
             )}
           </div>
-          {hint && (
+          {script && (
             <div className="hint-panel" aria-live="polite">
-              <p><b>💡 What it is:</b> {hint.meaning}</p>
-              <p className="hint-try">Try saying, one at a time (tap to use):</p>
+              <p><b>Say it like this:</b> {script.meaning}</p>
+              <p className="hint-try">One at a time (tap to use):</p>
               <div className="example-chips">
-                {hint.phrases.map((ph) => (
+                {script.phrases.map((ph) => (
                   <button key={ph} type="button" onClick={() => setTyped(ph)} disabled={!playing}>
                     {ph}
                   </button>
@@ -131,7 +125,7 @@ export function Play({ state, youId, secret, guesses, yapResult, hint, send, onH
             <button type="button" className="help-link" onClick={onHelp}>How to play</button>
           </div>
           <p className="guesser-line">
-            <b>{yapperName}</b> is describing a secret scene. Guess <b>every object and colour</b> in the picture.
+            <b>{yapperName}</b> is describing a secret scene. Guess <b>every object</b> in the picture. Name the colours too for a bonus.
           </p>
         </section>
       )}
@@ -259,8 +253,8 @@ export function Play({ state, youId, secret, guesses, yapResult, hint, send, onH
           </form>
           <p className="yap-status" aria-live="polite">
             {myLastGuess && !myLastGuess.correct
-              ? `❌ "${myLastGuess.text}" isn't it. Name every object and colour you see.`
-              : "Name everything in the picture, with colours. Guess as often as you like."}
+              ? `❌ "${myLastGuess.text}" isn't it. Name every object you see.`
+              : "Name every object in the picture. Colours are a bonus. Guess as often as you like."}
           </p>
         </div>
       )}

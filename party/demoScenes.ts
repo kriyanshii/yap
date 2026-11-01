@@ -1,12 +1,12 @@
 // Demo scenes for the live rounds. Each secret is a situation to perform, not a list of objects.
 // Banned words are the stamp nouns in the scene text (plurals are caught by the stem matcher). A guess is
-// right when it names every object and every color. Hint phrases are the circumlocutions the scenic bench
+// right when it names every object. Naming every colour is one bonus point. Hint phrases are the circumlocutions the scenic bench
 // accepted, and they avoid the misses: "in the sky" with no "at the top", "on the river", and a bare
 // "animal" or "pet".
 import type { Clue } from "./types";
 
 const scene = (id: string, text: string, objects: string[], colors: string[], meaning: string, phrases: string[]): Clue => ({
-  id, text, banned: objects, required: [...objects, ...colors], pack: "demo", hint: { meaning, phrases },
+  id, text, banned: objects, required: objects, ...(colors.length ? { colors } : {}), pack: "demo", hint: { meaning, phrases },
 });
 
 export const DEMO_SCENES: Clue[] = [
