@@ -35,23 +35,26 @@ const CASES: Case[] = [
   { id: "two-cats-house", expect: { objects: [{ type: "house" }, { type: "cat", count: 2 }], relations: [["cat", "on", "house"]] } },
   { id: "house-trees-sides", expect: { objects: [{ type: "house" }, { type: "tree", count: 2 }], relations: [["tree", "left_of", "house", "some"], ["tree", "right_of", "house", "some"]] } },
   { id: "black-cat-cloud", expect: { objects: [{ type: "cloud" }, { type: "cat", color: "black" }], relations: [["cat", "under", "cloud"]] } },
-  { id: "purple-sun-tree", expect: { objects: [{ type: "tree" }, { type: "sun", color: "purple" }], relations: [["sun", "above", "tree"]] } },
   { id: "white-house-orange-cat", expect: { objects: [{ type: "house", color: "white" }, { type: "cat", color: "orange" }] } },
-  { id: "tree-right-house-left", expect: { objects: [{ type: "tree" }, { type: "house" }], spots: [["tree", "right"], ["house", "left"]] } },
   { id: "small-house-big-cloud", expect: { objects: [{ type: "house", size: "small" }, { type: "cloud", size: "big" }], relations: [["house", "under", "cloud"]] } },
-  { id: "two-suns-house", expect: { objects: [{ type: "house" }, { type: "sun", count: 2 }], relations: [["sun", "above", "house"]] } },
-  { id: "big-house-small-cloud", expect: { objects: [{ type: "house", size: "big" }, { type: "cloud", size: "small" }], relations: [["cloud", "above", "house"]] } },
   { id: "red-sun-blue-cloud", expect: { objects: [{ type: "sun", color: "red" }, { type: "cloud", color: "blue" }] } },
   { id: "house-left-sun-right", expect: { objects: [{ type: "house" }, { type: "sun" }], spots: [["house", "left"], ["sun", "right"]] } },
-  { id: "three-clouds-house", expect: { objects: [{ type: "house" }, { type: "cloud", count: 3 }], relations: [["cloud", "above", "house"]] } },
-  { id: "purple-house-yellow-sun", expect: { objects: [{ type: "house", color: "purple" }, { type: "sun", color: "yellow" }], relations: [["sun", "above", "house"]] } },
-  { id: "small-sun-big-cloud", expect: { objects: [{ type: "sun", size: "small" }, { type: "cloud", size: "big" }] } },
-  { id: "cloud-left-house-right", expect: { objects: [{ type: "cloud" }, { type: "house" }], spots: [["cloud", "left"], ["house", "right"]] } },
-  { id: "white-house-orange-cloud", expect: { objects: [{ type: "house", color: "white" }, { type: "cloud", color: "orange" }], relations: [["house", "under", "cloud"]] } },
-  { id: "sun-left-cloud-right", expect: { objects: [{ type: "sun" }, { type: "cloud" }], spots: [["sun", "left"], ["cloud", "right"]] } },
-  { id: "two-houses-big-sun", expect: { objects: [{ type: "house", count: 2 }, { type: "sun", size: "big" }], relations: [["house", "under", "sun"]] } },
-  { id: "green-house-pink-cloud", expect: { objects: [{ type: "cloud", color: "pink" }, { type: "house", color: "green" }], relations: [["house", "under", "cloud"]] } },
+  { id: "moon-mountain", expect: { objects: [{ type: "mountain" }, { type: "moon" }], relations: [["moon", "above", "mountain"]] } },
+  { id: "river-mountain", expect: { objects: [{ type: "mountain" }, { type: "river" }], relations: [["river", "under", "mountain"]], spots: [["mountain", "top"], ["river", "bottom"]] } },
+  { id: "dog-house", expect: { objects: [{ type: "house" }, { type: "dog" }], relations: [["dog", "next_to", "house"]] } },
+  { id: "person-house", expect: { objects: [{ type: "house" }, { type: "person" }], relations: [["person", "next_to", "house"]] } },
+  { id: "birds-tree", expect: { objects: [{ type: "tree" }, { type: "bird", count: 2 }], relations: [["bird", "above", "tree"]] } },
+  { id: "fish-boat", expect: { objects: [{ type: "boat" }, { type: "fish", size: "small" }], relations: [["fish", "next_to", "boat"]] } },
+  { id: "red-car-house", expect: { objects: [{ type: "house" }, { type: "car", color: "red", size: "big" }], relations: [["car", "next_to", "house"]] } },
+  { id: "windmill-person", expect: { objects: [{ type: "person" }, { type: "windmill" }], relations: [["windmill", "left_of", "person"]] } },
+  { id: "bear-tree", expect: { objects: [{ type: "tree" }, { type: "bear", color: "brown" }], relations: [["bear", "next_to", "tree"]] } },
+  { id: "dog-person", expect: { objects: [{ type: "person" }, { type: "dog" }], relations: [["dog", "next_to", "person"]] } },
+  { id: "person-tree", expect: { objects: [{ type: "tree" }, { type: "person" }], relations: [["person", "under", "tree"]] } },
 ];
+const caseIds = new Set(CASES.map((c) => c.id));
+const sceneIds = new Set(DEMO_SCENES.map((s) => s.id));
+for (const id of sceneIds) if (!caseIds.has(id)) throw new Error(`no canvas case for ${id}`);
+for (const id of caseIds) if (!sceneIds.has(id)) throw new Error(`canvas case ${id} is not a demo scene`);
 
 function svg(objects: SceneObject[]): string {
   const plan = createStrokePlan("scene", 4242, 1, sceneToDrawingOps(objects));

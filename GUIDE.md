@@ -20,10 +20,13 @@ Your secret scene appears at the top. The words in red under **Don't say** are t
 
 1. **Describe one thing at a time, by what it is or does.**
    - "the animal that purrs" → cat
+   - "the pet that barks and wags its tail" → dog
    - "the bright light of daytime" → sun
-   - "a fluffy patch of mist in the sky" → cloud
+   - "a fluffy patch of mist" → cloud
    - "the place where people live" → house
    - "a tall plant with branches" → tree
+   - "a tall rocky peak" → mountain
+   - "a pale circle you see at night" → moon
 2. **Change the last thing with "it".**
    - "make it blue"
    - "make it bigger" / "make it smaller"
@@ -48,7 +51,7 @@ Your secret scene appears at the top. The words in red under **Don't say** are t
 
 Every hint's phrases are tested: `eval/canvas-check.mts` says them through the real artist and checks that the canvas shows the scene.
 
-The artist knows five things: **cat, tree, house, sun, cloud**, in 11 colours (red, orange, yellow, green, blue, purple, pink, brown, black, white, gray).
+The artist can draw sixteen things: **mountain, river, cloud, sun, moon, tree, house, person, cat, dog, bird, fish, boat, car, windmill, bear**, in 11 colours (red, orange, yellow, green, blue, purple, pink, brown, black, white, gray).
 
 ## If you're guessing
 

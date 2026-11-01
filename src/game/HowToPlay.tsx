@@ -27,7 +27,7 @@ export function HowToPlay({ onClose }: { onClose: () => void }) {
           <h3>🗣️ If you're the Yapper</h3>
           <ol>
             <li><b>Don't say the words shown in red.</b> They're the objects in the scene. Say one and the round ends.</li>
-            <li><b>Describe one thing at a time</b> by what it is or does: <q>the animal that purrs</q>, <q>the bright light of daytime</q>, <q>a fluffy patch in the sky</q>.</li>
+            <li><b>Describe one thing at a time</b> by what it is or does: <q>the animal that purrs</q>, <q>the pet that barks and wags its tail</q>, <q>the bright light of daytime</q>, <q>a fluffy patch of mist</q>.</li>
             <li><b>Then change it with "it":</b> <q>make it blue</q>, <q>make it bigger</q>, <q>move it to the left</q>. Add the next thing relative to it: <q>put the animal that purrs under it</q>. Say <q>undo</q> to take back the last change.</li>
             <li>Colours, sizes and positions are always allowed.</li>
             <li><b>Hold the mic button and talk</b> (or type), check the words, then press <b>Draw</b>. A line under the box tells you what the artist did.</li>
@@ -56,7 +56,7 @@ export function HowToPlay({ onClose }: { onClose: () => void }) {
           <h3>🎮 Getting started</h3>
           <ul>
             <li>Create a room and share the link or 4-letter code. You need at least 2 players; 3–6 is the most fun.</li>
-            <li>The artist knows five things: <b>cat, tree, house, sun, cloud</b>, in 11 colours.</li>
+            <li>The artist can draw sixteen things: <b>mountain, river, cloud, sun, moon, tree, house, person, cat, dog, bird, fish, boat, car, windmill, bear</b>, in 11 colours.</li>
           </ul>
 
           <button type="button" className="btn primary help-ok" onClick={onClose}>Got it</button>

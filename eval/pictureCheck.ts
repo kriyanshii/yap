@@ -2,7 +2,7 @@
 import type { SceneObject } from '../src/scene/engine.ts';
 
 export type Rel = 'on' | 'under' | 'above' | 'next_to' | 'left_of' | 'right_of';
-export type Spot = 'left' | 'right' | 'top';
+export type Spot = 'left' | 'right' | 'top' | 'bottom';
 export interface Expect {
   objects: { type: string; color?: string; count?: number; size?: 'big' | 'small' }[];
   relations?: ([string, Rel, string] | [string, Rel, string, 'all' | 'some'])[];
@@ -45,7 +45,7 @@ export function check(objects: SceneObject[], e: Expect): string[] {
     if (Math.abs(a.x - b.x) < 0.08 && Math.abs(a.y - b.y) < 0.08) problems.push(`${a.type} and ${b.type} are drawn on top of each other`);
   }
   for (const [t, spot] of e.spots ?? []) {
-    const ok = of(t).some((o) => (spot === 'left' ? o.x < 0.4 : spot === 'right' ? o.x > 0.6 : o.y < 0.35));
+    const ok = of(t).some((o) => (spot === 'left' ? o.x < 0.4 : spot === 'right' ? o.x > 0.6 : spot === 'top' ? o.y < 0.35 : o.y > 0.65));
     if (of(t).length && !ok) problems.push(`${t} isn't at the ${spot}`);
   }
   return problems;
