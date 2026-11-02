@@ -16,7 +16,9 @@ export type PublicReveal = {
   roast: string;
   /** What the yapper said this round, published only after the round ends. */
   said?: string;
-  /** The yapper used a hint, so they got no bonus point. */
+  /** The winning guess also named every colour, so the guesser scored +3 instead of +2. */
+  colorBonus?: boolean;
+  /** Kept for older clients. Phrases are on the card and do not cost a point, so this stays false. */
   hintUsed?: boolean;
 };
 
@@ -136,7 +138,7 @@ export type PublicState = {
   drawingOps: DrawingOp[];
   /** drawingOps is the scene engine's full scene graph (an empty list means an empty canvas). */
   sceneMode: boolean;
-  /** The yapper opened this round's hint (it costs their bonus point). The hint itself goes only to the yapper. */
+  /** Always false. The phrases travel with the yapper's secret and do not cost a point. */
   hintUsed: boolean;
   reveal?: PublicReveal;
 };
@@ -146,9 +148,11 @@ export type Clue = {
   text: string;
   banned: string[];
   pack: "easy" | "weird" | "culture" | "demo";
-  /** Words a guess must contain (demo scenes); without it, guesses are fuzzy-matched against `text`. */
+  /** Object nouns a guess must contain. Without this, guesses are fuzzy-matched against `text`. */
   required?: string[];
-  /** Yapper-only help: what the scene is (no banned words) and phrases the artist understands. */
+  /** Colour words. Naming every one of them is a bonus point; missing them still wins. */
+  colors?: string[];
+  /** Yapper-only: what the scene is (no banned words) and phrases the artist understands. Sent with the secret. */
   hint?: Hint;
 };
 
@@ -176,7 +180,7 @@ export type ClientMessage =
 
 export type ServerMessage =
   | { type: "you"; id: string; isHost: boolean }
-  | { type: "secret"; clue: string; banned: string[]; canSkip: boolean }
+  | { type: "secret"; clue: string; banned: string[]; canSkip: boolean; hint?: Hint }
   | { type: "hint"; hint: Hint }
   | { type: "state"; state: PublicState }
   | { type: "guess"; name: string; text: string; correct: boolean }

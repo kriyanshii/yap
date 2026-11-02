@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import PartySocket from "partysocket";
 import type { DebugEntry, Hint, PublicState, ServerMessage, YapStatus } from "../../party/types";
 
-export type Secret = { clue: string; banned: string[]; canSkip: boolean };
+export type Secret = { clue: string; banned: string[]; canSkip: boolean; hint?: Hint };
 export type PublicGuess = { name: string; text: string; correct: boolean };
 /** What the yapper's last utterance did; `n` counts results so the UI can tell a new one arrived. */
 export type YapResult = { status: YapStatus; text: string; n: number };
@@ -79,10 +79,8 @@ export function useRoom(code: string | null, name: string) {
         return;
       }
       if (msg.type === "secret") {
-        setSecret((prev) => {
-          if (prev?.clue !== msg.clue) setHint(null); // a skip brings a new scene, so the old hint no longer applies
-          return { clue: msg.clue, banned: msg.banned, canSkip: msg.canSkip };
-        });
+        setSecret({ clue: msg.clue, banned: msg.banned, canSkip: msg.canSkip, hint: msg.hint });
+        setHint(null);
         return;
       }
       if (msg.type === "hint") {

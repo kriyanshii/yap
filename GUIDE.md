@@ -2,7 +2,7 @@
 
 **Play:** https://yap.kriyanshishah06.workers.dev
 
-Yap is a party guessing game. One player, the **Yapper**, gets a secret scene like *"a blue cat under a tree"* and describes it out loud. An AI artist draws what they say, live. Everyone else guesses the scene from the drawing.
+Yap is a party guessing game. One player, the **Yapper**, gets a secret scene like *"a blue cat hiding under a tree"* and describes it out loud. An AI artist draws what they say, live. Everyone else guesses the scene from the drawing.
 
 The same guide is in the game: press **How to play** on any screen.
 
@@ -44,9 +44,9 @@ Your secret scene appears at the top. The words in red under **Don't say** are t
 | 🤔 Nothing drawn: too vague | Try saying what the thing *is* or *does*, one thing at a time. |
 | ⚠️ Couldn't reach the artist | A network hiccup. Say it again; nothing on the canvas changed. |
 
-### Stuck? Hint or skip
+### How to say it
 
-- **💡 Hint** shows what the scene is (without the red words) and a few phrases the artist reliably understands. Tap a phrase to put it in the box. A hint costs your +1 for that round. Guessers can see that you used one, but never what it said.
+- The card shows what the scene is (without the red words) and a few phrases the artist reliably understands. Tap a phrase to put it in the box. Guessers never see those phrases.
 - **⏭ Skip scene** swaps in a new scene with a fresh canvas. You get one per game, and the timer keeps running.
 
 Every hint's phrases are tested: `eval/canvas-check.mts` says them through the real artist and checks that the canvas shows the scene.
@@ -55,13 +55,13 @@ The artist can draw sixteen things: **mountain, river, cloud, sun, moon, tree, h
 
 ## If you're guessing
 
-Watch the picture build, then type a guess that names **every object and colour** you see, for example "a blue cat under a tree". Order doesn't matter, and plurals are fine. Wrong guesses appear as sticky notes on the canvas, so guess as often as you like.
+Watch the picture build, then type a guess that names **every object** you see, for example "a cat under a tree". Order doesn't matter, and plurals are fine. Name every colour too, as in "a blue cat hiding under a tree", and that guess is worth one more point. Wrong guesses appear as sticky notes on the canvas, so guess as often as you like.
 
 ## Scoring
 
 | what happens | points |
 |---|---|
-| First correct guess | guesser +2, Yapper +1 (0 if they used a hint) |
+| First correct guess | guesser +2, Yapper +1. Every colour named: guesser +3 |
 | Yapper says a red word | everyone else +1 |
 | Time runs out | nobody scores |
 

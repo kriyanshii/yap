@@ -3,7 +3,7 @@ import { SceneEngine, type Snapshot } from "../src/scene/engine.ts";
 import { DEMO_SCENES } from "./demoScenes";
 import { describeOps } from "./describe";
 import { sceneToDrawingOps } from "./sceneOps";
-import { fuzzyMatch, hitsBanned, sceneGuessMatches } from "./match";
+import { fuzzyMatch, hitsBanned, sceneColorBonus, sceneGuessMatches } from "./match";
 import { bestGuessStep, defaultChain, mapUtterance, readMapperEnv, warmUpQwen } from "./sceneMapper";
 import type {
   Clue,
@@ -322,7 +322,7 @@ export class YapServer extends Server<Env> {
     return id ? [...this.getConnections()].find((c) => c.id === id) : undefined;
   }
 
-  /** Yapper-only: sends the scene's hint to the yapper (and nobody else). The first request costs the bonus point. */
+  /** Yapper-only resend of the phrases that already arrived with the secret. It does not change the score. */
   private handleHint(sender: Connection) {
     if ((this.phase !== "countdown" && this.phase !== "playing") || this.roundClosed) return;
     if (sender.id !== this.yapperId) {
@@ -333,10 +333,7 @@ export class YapServer extends Server<Env> {
       this.send(sender, { type: "toast", text: "No hint for this scene." });
       return;
     }
-    const first = !this.hintUsed;
-    this.hintUsed = true;
     this.send(sender, { type: "hint", hint: this.clue.hint });
-    if (first) this.broadcastState();
   }
 
   /** Yapper-only, once per player per game: a new scene and a fresh canvas. The timer keeps running. */
@@ -377,10 +374,11 @@ export class YapServer extends Server<Env> {
     const correct = !this.clue ? false
       : this.clue.required ? sceneGuessMatches(text, this.clue.required)
       : fuzzyMatch(text, this.clue.text);
+    const colorBonus = !!this.clue && correct && sceneColorBonus(text, this.clue.colors ?? []);
     this.broadcastMsg({ type: "guess", name: player.name, text, correct });
 
     if (correct) {
-      this.endRound("guessed", player.id);
+      this.endRound("guessed", player.id, colorBonus);
     }
   }
 
@@ -449,17 +447,16 @@ export class YapServer extends Server<Env> {
     return clue;
   }
 
-  private endRound(reason: RevealReason, winnerId: string | null) {
+  private endRound(reason: RevealReason, winnerId: string | null, colorBonus = false) {
     if (this.roundClosed) return;
     this.roundClosed = true;
     this.clearPaintTimer();
 
     const winner = winnerId ? this.players.get(winnerId) : null;
     if (reason === "guessed" && winner) {
-      winner.score += 2;
+      winner.score += colorBonus ? 3 : 2;
       const yapper = this.yapperId ? this.players.get(this.yapperId) : null;
-      // A hint costs the yapper their bonus point.
-      if (yapper && !this.hintUsed) yapper.score += 1;
+      if (yapper) yapper.score += 1;
     } else if (reason === "said_secret") {
       for (const p of this.players.values()) {
         if (p.id !== this.yapperId && p.connected) p.score += 1;
@@ -473,7 +470,8 @@ export class YapServer extends Server<Env> {
       winnerName,
       roast: roastFor(reason, winnerName),
       said: this.roundUtterances.join(", "),
-      hintUsed: this.hintUsed,
+      colorBonus,
+      hintUsed: false,
     };
     this.phase = "reveal";
     this.timeLeft = REVEAL_S;
@@ -634,9 +632,8 @@ export class YapServer extends Server<Env> {
       clue: this.clue.text,
       banned: this.clue.banned,
       canSkip: !this.skipsUsed.has(connection.id),
+      ...(this.clue.hint ? { hint: this.clue.hint } : {}),
     });
-    // A reconnecting yapper gets back the hint they already paid for.
-    if (this.hintUsed && this.clue.hint) this.send(connection, { type: "hint", hint: this.clue.hint });
   }
 
   private send(connection: Connection, msg: ServerMessage) {

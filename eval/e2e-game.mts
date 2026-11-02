@@ -71,22 +71,20 @@ yapper.send({ type: "utterance", text: "this game is so hard lol" });
 await sleep(4000);
 check(JSON.stringify(guesser.state.drawingOps) === before, "chatter left the canvas unchanged");
 
-// Hint: only the yapper receives it; it is flagged publicly and costs the yapper's bonus point.
+// The phrases arrive with the secret. Guessers never see them, and they do not cost the yapper a point.
+const script = secret.hint;
+check(Array.isArray(script?.phrases) && script.phrases.length >= 2, `yapper's card includes phrases: "${script?.meaning}"`);
+check(guesser.state.hintUsed === false, "phrases on the card are not flagged as a spent hint");
+check(!guesser.inbox.some((m) => JSON.stringify(m).includes(script?.meaning ?? "missing-meaning")), "guesser never received the phrases");
 const yapperScoreBefore = guesser.state.players.find((p: any) => p.id === guesser.state.yapperId).score;
-yapper.send({ type: "hint" });
-await until("hint arrives", () => yapper.inbox.some((m) => m.type === "hint"), 5000);
-const hintMsg = yapper.last("hint")!;
-check(Array.isArray(hintMsg.hint?.phrases) && hintMsg.hint.phrases.length >= 2, `yapper received a hint: "${hintMsg.hint?.meaning}"`);
-await until("hintUsed in state", () => guesser.state.hintUsed === true, 5000);
-check(!guesser.inbox.some((m) => m.type === "hint" || JSON.stringify(m).includes(hintMsg.hint.meaning)), "guesser saw that a hint was used, but never the hint itself");
 
-// A correct guess (names every object/color in the scene) ends the round; the reveal carries what was said.
+// A correct guess (the scene text names every object and colour) ends the round; the reveal carries what was said.
 guesser.send({ type: "guess", text: secret.clue });
 await until("reveal", () => guesser.state?.phase === "reveal", 10000);
 check(guesser.state.reveal?.reason === "guessed", "guessing the scene ended the round");
 check((guesser.state.reveal?.said ?? "").includes("tall plant"), "the reveal shows what the yapper said");
 const yapperScoreAfter = guesser.state.players.find((p: any) => p.id === guesser.state.yapperId).score;
-check(guesser.state.reveal?.hintUsed === true && yapperScoreAfter === yapperScoreBefore, `hint cost the yapper's bonus (score ${yapperScoreBefore} -> ${yapperScoreAfter})`);
+check(yapperScoreAfter === yapperScoreBefore + 1, `yapper still scores +1 with the phrases on the card (${yapperScoreBefore} -> ${yapperScoreAfter})`);
 await until("host debug log after the round", () => host.inbox.some((m) => m.type === "debug" && m.entries.some((e: any) => e.utterance === "make it gray")), 5000).catch(() => {});
 const log = [...host.inbox].reverse().find((m) => m.type === "debug")?.entries ?? [];
 check(log.some((e: any) => e.utterance === "make it gray"), "host received the round's debug log after the reveal");

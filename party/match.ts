@@ -124,7 +124,12 @@ export function sillyFilename(clue: string): string {
   return `${base}.bmp`;
 }
 
-/** Demo scenes: a guess is right when it names every required word (object nouns and colors), in any order. */
+/** Demo scenes: a guess is right when it names every object noun, in any order. */
 export function sceneGuessMatches(guess: string, required: string[]): boolean {
   return required.length > 0 && required.every((word) => hitsBanned(guess, [word]));
+}
+
+/** True when the guess also names every colour in the scene. No colours means no bonus. */
+export function sceneColorBonus(guess: string, colors: string[]): boolean {
+  return colors.length > 0 && colors.every((word) => hitsBanned(guess, [word]));
 }
